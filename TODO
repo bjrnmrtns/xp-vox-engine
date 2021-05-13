@@ -45,6 +45,11 @@ DONE 28: Render voxels naive / try greedy meshing / measure difference
 [x] create bigger test scene with generated voxels from heightmap and a few vox models
 [x] measure naive implementation
 [x] greedy  meshing
+TODO 30: Move to wgpu 0.8 from 0.7
+[ ] simplify shaders
+[ ] Move to 0.8
+[ ] convert simplified shaders from glsl to wgsl
+[ ] add complex behaviour back in
 TODO 15: Terrain generation using blue noise (can be implemented using poison disc sampling, use blue noise texture from noise-test) voronoi redblobgames
 TODO 25: Character animation
 TODO 24: sync rotation of Transform between entity and physics // check bevy_rapier
