@@ -15,31 +15,8 @@ pub struct Pipeline {
 
 impl Pipeline {
     pub async fn new(renderer: &Renderer, bind_group: &BindGroup) -> Result<Self, RendererError> {
-        let (mut spirv_vs_bytes, mut spirv_fs_bytes) = (Vec::new(), Vec::new());
-        match glsl_to_spirv::compile(include_str!("shaders/shader.vert"), glsl_to_spirv::ShaderType::Vertex) {
-            Ok(mut spirv_vs_output) => {
-                spirv_vs_output.read_to_end(&mut spirv_vs_bytes).unwrap();
-            }
-            Err(ref e) => return Err(RendererError::from(e.clone())),
-        }
-        match glsl_to_spirv::compile(include_str!("shaders/shader.frag"), glsl_to_spirv::ShaderType::Fragment) {
-            Ok(mut spirv_vs_output) => {
-                spirv_vs_output.read_to_end(&mut spirv_fs_bytes).unwrap();
-            }
-            Err(ref e) => return Err(RendererError::from(e.clone())),
-        }
-        let vs_module_source = wgpu::util::make_spirv(spirv_vs_bytes.as_slice());
-        let fs_module_source = wgpu::util::make_spirv(spirv_fs_bytes.as_slice());
-        let vs_module = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: vs_module_source,
-            flags: Default::default(),
-        });
-        let fs_module = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: fs_module_source,
-            flags: Default::default(),
-        });
+        let vs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.vert.spv"));
+        let fs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.frag.spv"));
         let render_pipeline_layout = renderer.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group.bind_group_layout],
