@@ -42,56 +42,52 @@ impl LightBindGroup {
         let instances = renderer.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
             usage: wgpu::BufferUsage::STORAGE | wgpu::BufferUsage::COPY_DST,
-            size: (std::mem::size_of::<Instance>() * MAX_NR_OF_SPOT_LIGHTS * MAX_NR_OF_POINT_LIGHTS)
-                as u64,
+            size: (std::mem::size_of::<Instance>() * MAX_NR_OF_SPOT_LIGHTS * MAX_NR_OF_POINT_LIGHTS) as u64,
             mapped_at_creation: false,
         });
 
-        let bind_group_layout =
-            renderer
-                .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                min_binding_size: None,
-                                has_dynamic_offset: false,
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Storage { read_only: true },
-                                min_binding_size: None,
-                                has_dynamic_offset: false,
-                            },
-                            count: None,
-                        },
-                    ],
-                    label: None,
-                });
-
-        let bind_group = renderer
+        let bind_group_layout = renderer
             .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                label: None,
-                layout: &bind_group_layout,
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
-                    wgpu::BindGroupEntry {
+                    wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        resource: uniform.as_entire_binding(),
+                        visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            min_binding_size: None,
+                            has_dynamic_offset: false,
+                        },
+                        count: None,
                     },
-                    wgpu::BindGroupEntry {
+                    wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        resource: instances.as_entire_binding(),
+                        visibility: wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            min_binding_size: None,
+                            has_dynamic_offset: false,
+                        },
+                        count: None,
                     },
                 ],
+                label: None,
             });
+
+        let bind_group = renderer.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: instances.as_entire_binding(),
+                },
+            ],
+        });
         Self {
             uniform,
             instances,

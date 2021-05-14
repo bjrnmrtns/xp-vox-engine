@@ -7,9 +7,8 @@ use crate::{
     },
 };
 use glam::{Mat4, Vec3};
-use std::io::Read;
+use std::{borrow::Cow, io::Read};
 use wgpu::ShaderFlags;
-use std::borrow::Cow;
 
 pub struct LightPipeline {
     render_pipeline: wgpu::RenderPipeline,
@@ -43,7 +42,7 @@ impl LightPipeline {
                 cull_mode: Some(wgpu::Face::Back),
                 clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
-                conservative: false
+                conservative: false,
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: DepthTexture::DEPTH_FORMAT,

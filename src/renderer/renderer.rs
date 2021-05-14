@@ -1,5 +1,5 @@
 use crate::renderer::{depth_texture::DepthTexture, error::RendererError, vertex_buffer::VertexBuffer};
-use naga::{front::wgsl, valid::Validator};
+use naga::valid::{ModuleInfo, ValidationError, Validator};
 use std::collections::HashMap;
 use winit::window::Window;
 
@@ -78,20 +78,21 @@ fn parse_wgsl() {
 
     match shader {
         Ok(s) => {
-            let module = wgsl::parse_str(&s);
+            let module = naga::front::wgsl::parse_str(&s);
+
             match module {
-                Ok(m) => {
-                    Validator::new(naga::valid::ValidationFlags::all())
-                        .validate(&m)
-                        .unwrap();
-                }
+                Ok(module) => match Validator::new(naga::valid::ValidationFlags::all()).validate(&module) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        log::error!("validate: {:?}", e);
+                    }
+                },
                 Err(e) => {
-                    log::error!("{:?}", e);
+                    log::error!("parse string: {:?}", e);
                 }
             }
         }
         Err(e) => {
-            println!("{:?}", e);
             log::error!("{:?}", e);
         }
     }

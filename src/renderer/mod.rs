@@ -16,3 +16,4 @@ pub use light_bindgroup::LightBindGroup;
 pub use light_pipeline::LightPipeline;
 pub use pipeline::Pipeline;
 pub use renderer::Renderer;
+pub use vertex_buffer::VertexBuffer;

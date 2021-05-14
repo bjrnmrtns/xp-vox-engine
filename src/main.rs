@@ -21,7 +21,9 @@ use crate::{
     mesh::{Cube, IcoSphere, Mesh},
     physics::{Body, BodyStatus, CollisionShape, Cuboid, Physics, Sphere},
     registry::Registry,
-    renderer::{BindGroup, DirectionalProperties, Light, LightBindGroup, PointProperties, SpotProperties},
+    renderer::{
+        BindGroup, DirectionalProperties, Light, LightBindGroup, PointProperties, SpotProperties, VertexBuffer,
+    },
     transform::Transform,
     world::World,
 };
@@ -170,6 +172,14 @@ fn main() -> Result<(), GameError> {
                     .output
                     .view;
 
+                for (id, mesh) in &mut meshes.registry {
+                    if mesh.just_loaded {
+                        renderer
+                            .vertex_buffers
+                            .insert(*id, VertexBuffer::from_mesh(&renderer, mesh));
+                        mesh.just_loaded = false;
+                    }
+                }
                 /*pipeline.render(
                     &entities,
                     &mut meshes,

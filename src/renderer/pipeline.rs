@@ -18,12 +18,12 @@ impl Pipeline {
         let vs_module = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::util::make_spirv(include_bytes!("shaders/shader.vert.spv")),
-            flags: wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION
+            flags: wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION,
         });
         let fs_module = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::util::make_spirv(include_bytes!("shaders/shader.frag.spv")),
-            flags: wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION
+            flags: wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION,
         });
         //let vs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.vert.spv"));
         //let fs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.frag.spv"));
@@ -48,7 +48,7 @@ impl Pipeline {
                 cull_mode: Some(wgpu::Face::Back),
                 clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
-                conservative: false
+                conservative: false,
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: DepthTexture::DEPTH_FORMAT,
@@ -91,12 +91,6 @@ impl Pipeline {
         let mut start_range = 0;
         let mut transforms = Vec::new();
         for (id, mesh) in &mut meshes.registry {
-            if mesh.just_loaded {
-                renderer
-                    .vertex_buffers
-                    .insert(*id, VertexBuffer::from_mesh(&renderer, mesh));
-                mesh.just_loaded = false;
-            }
             transforms.extend_from_slice(
                 entities
                     .registry
@@ -136,7 +130,7 @@ impl Pipeline {
                         store: true,
                     },
                 }],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment{
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &renderer.depth_texture.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
