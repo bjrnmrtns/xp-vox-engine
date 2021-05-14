@@ -44,13 +44,13 @@ fn main() -> Result<(), GameError> {
         .expect("Could not create window");
     let mut renderer =
         futures::executor::block_on(renderer::Renderer::new(&window)).expect("Could not create renderer");
-    //let pipeline_bindgroup = BindGroup::new(&renderer);
-    //let pipeline = futures::executor::block_on(renderer::Pipeline::new(&renderer, &pipeline_bindgroup))
-    //    .expect("Could not create pipeline");
-    let light_pipeline_bindgroup = LightBindGroup::new(&renderer);
-    let pipeline_light =
-        futures::executor::block_on(renderer::LightPipeline::new(&renderer, &light_pipeline_bindgroup))
-            .expect("Could not create pipeline light");
+    let pipeline_bindgroup = BindGroup::new(&renderer);
+    let pipeline = futures::executor::block_on(renderer::Pipeline::new(&renderer, &pipeline_bindgroup))
+        .expect("Could not create pipeline");
+    //let light_pipeline_bindgroup = LightBindGroup::new(&renderer);
+    //let pipeline_light =
+    //    futures::executor::block_on(renderer::LightPipeline::new(&renderer, &light_pipeline_bindgroup))
+    //        .expect("Could not create pipeline light");
 
     let mut vox_models = Registry::new();
     let mut physics = Physics::default();
@@ -172,15 +172,7 @@ fn main() -> Result<(), GameError> {
                     .output
                     .view;
 
-                for (id, mesh) in &mut meshes.registry {
-                    if mesh.just_loaded {
-                        renderer
-                            .vertex_buffers
-                            .insert(*id, VertexBuffer::from_mesh(&renderer, mesh));
-                        mesh.just_loaded = false;
-                    }
-                }
-                /*pipeline.render(
+                pipeline.render(
                     &entities,
                     &mut meshes,
                     &lights,
@@ -188,15 +180,15 @@ fn main() -> Result<(), GameError> {
                     &follow_camera,
                     &mut renderer,
                     target,
-                );*/
-                pipeline_light.render(
+                );
+                /*pipeline_light.render(
                     &light_mesh_handle,
                     &lights,
                     &light_pipeline_bindgroup,
                     &follow_camera,
                     &mut renderer,
                     target,
-                );
+                );*/
                 let after_render = std::time::Instant::now();
                 println!(
                     "render-time: {}, generate_time: {}",

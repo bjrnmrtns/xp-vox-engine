@@ -7,7 +7,7 @@ use crate::{
         Camera, Light, Renderer,
     },
 };
-use std::io::Read;
+use std::{borrow::Cow, io::Read};
 
 pub struct Pipeline {
     render_pipeline: wgpu::RenderPipeline,
@@ -15,18 +15,11 @@ pub struct Pipeline {
 
 impl Pipeline {
     pub async fn new(renderer: &Renderer, bind_group: &BindGroup) -> Result<Self, RendererError> {
-        let vs_module = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+        let shader = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::util::make_spirv(include_bytes!("shaders/shader.vert.spv")),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shaders/shader.wgsl"))),
             flags: wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION,
         });
-        let fs_module = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::util::make_spirv(include_bytes!("shaders/shader.frag.spv")),
-            flags: wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION,
-        });
-        //let vs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.vert.spv"));
-        //let fs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.frag.spv"));
         let render_pipeline_layout = renderer.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group.bind_group_layout],
@@ -37,8 +30,8 @@ impl Pipeline {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &vs_module,
-                entry_point: "main",
+                module: &shader,
+                entry_point: "vs_main",
                 buffers: &[Vertex::desc()],
             },
             primitive: wgpu::PrimitiveState {
@@ -68,8 +61,8 @@ impl Pipeline {
             }),
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState {
-                module: &fs_module,
-                entry_point: "main",
+                module: &shader,
+                entry_point: "fs_main",
                 targets: &[renderer.swap_chain_descriptor.format.into()],
             }),
         });
@@ -91,6 +84,12 @@ impl Pipeline {
         let mut start_range = 0;
         let mut transforms = Vec::new();
         for (id, mesh) in &mut meshes.registry {
+            if mesh.just_loaded {
+                renderer
+                    .vertex_buffers
+                    .insert(*id, VertexBuffer::from_mesh(&renderer, mesh));
+                mesh.just_loaded = false;
+            }
             transforms.extend_from_slice(
                 entities
                     .registry
