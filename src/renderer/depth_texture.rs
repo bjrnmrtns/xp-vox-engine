@@ -16,7 +16,7 @@ impl DepthTexture {
             // 2.
             width: sc_desc.width,
             height: sc_desc.height,
-            depth: 1,
+            depth_or_array_layers: 1
         };
         let desc = wgpu::TextureDescriptor {
             label: None,

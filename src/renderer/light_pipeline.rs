@@ -8,6 +8,8 @@ use crate::{
 };
 use glam::{Mat4, Vec3};
 use std::io::Read;
+use wgpu::ShaderFlags;
+use std::borrow::Cow;
 
 pub struct LightPipeline {
     render_pipeline: wgpu::RenderPipeline,
@@ -15,8 +17,11 @@ pub struct LightPipeline {
 
 impl LightPipeline {
     pub async fn new(renderer: &Renderer, bind_group: &LightBindGroup) -> Result<Self, RendererError> {
-        let vs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/light_shader.vert.spv"));
-        let fs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/light_shader.frag.spv"));
+        let shader = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shaders/light_shader.wgsl"))),
+            flags: wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION,
+        });
         let render_pipeline_layout = renderer.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group.bind_group_layout],
@@ -27,16 +32,18 @@ impl LightPipeline {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &vs_module,
-                entry_point: "main",
+                module: &shader,
+                entry_point: "vs_main",
                 buffers: &[Vertex::desc()],
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: wgpu::CullMode::Back,
+                cull_mode: Some(wgpu::Face::Back),
+                clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: DepthTexture::DEPTH_FORMAT,
@@ -53,12 +60,11 @@ impl LightPipeline {
                     slope_scale: 0.0,
                     clamp: 0.0,
                 },
-                clamp_depth: false,
             }),
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState {
-                module: &fs_module,
-                entry_point: "main",
+                module: &shader,
+                entry_point: "fs_main",
                 targets: &[renderer.swap_chain_descriptor.format.into()],
             }),
         });
@@ -106,16 +112,16 @@ impl LightPipeline {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &target,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &target,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: true,
                     },
                 }],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &renderer.depth_texture.view,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &renderer.depth_texture.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: true,

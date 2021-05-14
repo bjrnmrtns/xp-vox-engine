@@ -15,8 +15,18 @@ pub struct Pipeline {
 
 impl Pipeline {
     pub async fn new(renderer: &Renderer, bind_group: &BindGroup) -> Result<Self, RendererError> {
-        let vs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.vert.spv"));
-        let fs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.frag.spv"));
+        let vs_module = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::util::make_spirv(include_bytes!("shaders/shader.vert.spv")),
+            flags: wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION
+        });
+        let fs_module = renderer.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::util::make_spirv(include_bytes!("shaders/shader.frag.spv")),
+            flags: wgpu::ShaderFlags::EXPERIMENTAL_TRANSLATION
+        });
+        //let vs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.vert.spv"));
+        //let fs_module = renderer.device.create_shader_module(&wgpu::include_spirv!("shaders/shader.frag.spv"));
         let render_pipeline_layout = renderer.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group.bind_group_layout],
@@ -35,8 +45,10 @@ impl Pipeline {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: wgpu::CullMode::Back,
+                cull_mode: Some(wgpu::Face::Back),
+                clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: DepthTexture::DEPTH_FORMAT,
@@ -53,7 +65,6 @@ impl Pipeline {
                     slope_scale: 0.0,
                     clamp: 0.0,
                 },
-                clamp_depth: false,
             }),
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState {
@@ -112,8 +123,8 @@ impl Pipeline {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &target,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &target,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -125,8 +136,8 @@ impl Pipeline {
                         store: true,
                     },
                 }],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &renderer.depth_texture.view,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment{
+                    view: &renderer.depth_texture.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: true,
