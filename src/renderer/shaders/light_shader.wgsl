@@ -8,13 +8,17 @@ struct Globals {
 [[group(0), binding(0)]]
 var<uniform> u_globals: Globals;
 
-[[block]]
 struct Instance {
-    models: array<mat4x4<f32>>;
+    model: mat4x4<f32>;
+};
+
+[[block]]
+struct Instances {
+    models: array<Instance>;
 };
 
 [[group(0), binding(1)]]
-var<storage> models: [[access(read)]] Instance;
+var<storage> models: [[access(read)]] Instances;
 
 struct VertexOutput {
     [[builtin(position)]] proj_position: vec4<f32>;
@@ -29,7 +33,7 @@ fn vs_main([[builtin(instance_index)]] instance_idx: u32, [[location(0)]] model_
            [[location(2)]] color: vec3<f32>) -> VertexOutput {
     let view = u_globals.view;
     let proj = u_globals.proj;
-    let model = models.models[instance_idx];
+    let model = models.models[instance_idx].model;
     var out: VertexOutput;
     out.world_position = (model * vec4<f32>(model_position, 1.0)).xyz;
     // TODO: doing inverse for every vertex is expensive, this can be done once per mesh on cpu
