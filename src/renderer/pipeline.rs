@@ -96,9 +96,9 @@ impl Pipeline {
                     .iter()
                     .filter_map(|(_, v)| {
                         if v.mesh_handle.id == *id {
-                            Some(Instance {
-                                m: v.transform.to_matrix(),
-                            })
+                            let m = v.transform.to_matrix();
+                            let inv_m = m.inverse();
+                            Some(Instance { m, inv_m })
                         } else {
                             None
                         }

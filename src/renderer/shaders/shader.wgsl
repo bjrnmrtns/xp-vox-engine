@@ -52,7 +52,7 @@ var<uniform> u_globals: Globals;
 
 [[block]]
 struct DirectionalLights {
-    directional_lights: array<DirectionalLight, 1>;
+    lights: array<DirectionalLight, 1>;
 };
 
 [[group(0), binding(1)]]
@@ -76,6 +76,7 @@ var<uniform> point_lights: PointLights;
 
 struct Instance {
     model: mat4x4<f32>;
+    inverse_model: mat4x4<f32>;
 };
 
 [[block]]
@@ -100,12 +101,44 @@ fn vs_main([[builtin(instance_index)]] instance_idx: u32, [[location(0)]] model_
     let view = u_globals.view;
     let proj = u_globals.proj;
     let model = models.models[instance_idx].model;
+    let inverse_transpose = transpose(models.models[instance_idx].inverse_model);
     var out: VertexOutput;
     out.proj_position = proj * view * model * vec4<f32>(model_position, 1.0);
+    out.world_position = (model * vec4<f32>(model_position, 1.0)).xyz;
+    out.world_normal = (inverse_transpose * vec4<f32>(model_normal, 1.0)).xyz;
+    out.color = color;
     return out;
 }
 
+fn calculate_directional_light(i: u32, normal: vec3<f32>, view_direction: vec3<f32>, light: DirectionalLight, material_specular: vec3<f32>, material_shininess: f32, in_color: vec3<f32>) -> vec3<f32>
+{
+    // negate light direction -> we want direction towards light
+    let light_direction = normalize(-light.direction.xyz);
+    // diffuse
+    let diff = max(dot(normal, light_direction), 0.0);
+    // specular
+    let halfway_direction = normalize(light_direction + view_direction);
+    let spec = pow(max(dot(view_direction, halfway_direction), 0.0), material_shininess);
+
+    let ambient  = light.ambient.xyz * in_color;
+    let diffuse = light.diffuse.xyz * diff * in_color;
+    let specular = light.specular.xyz * spec * material_specular.xyz;
+
+    return ambient + diffuse + specular;
+}
+
+
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    let normal = normalize(in.world_normal);
+    let view_direction = normalize(u_globals.world_camera_position.xyz - in.world_position);
+
+    var result: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);
+
+    for(var i: u32 = 0u; i < u_globals.nr_of_directional_lights; i = i + 1u) {
+        result = result + calculate_directional_light(i, normal, view_direction, directional_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
+    }
+    let gamma: f32 = 2.2;
+    let color = vec4<f32>(pow(result, vec3<f32>(1.0 / gamma)), 1.0);
+    return color;
 }

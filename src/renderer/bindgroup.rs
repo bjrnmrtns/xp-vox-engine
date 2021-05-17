@@ -26,6 +26,7 @@ pub struct Uniform {
 #[derive(Debug, Copy, Clone)]
 pub struct Instance {
     pub m: Mat4,
+    pub inv_m: Mat4,
 }
 
 unsafe impl bytemuck::Pod for Uniform {}
