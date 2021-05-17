@@ -84,22 +84,22 @@ impl LightPipeline {
         for (_, light) in &lights.registry {
             match light {
                 Light::Spot(properties) => {
-                    transforms.push(Instance {
-                        m: Mat4::from_translation(Vec3::new(
-                            properties.position[0],
-                            properties.position[1],
-                            properties.position[2],
-                        )),
-                    });
+                    let m = Mat4::from_translation(Vec3::new(
+                        properties.position[0],
+                        properties.position[1],
+                        properties.position[2],
+                    ));
+                    let inv_m = m.inverse();
+                    transforms.push(Instance { m, inv_m });
                 }
                 Light::Point(properties) => {
-                    transforms.push(Instance {
-                        m: Mat4::from_translation(Vec3::new(
-                            properties.position[0],
-                            properties.position[1],
-                            properties.position[2],
-                        )),
-                    });
+                    let m = Mat4::from_translation(Vec3::new(
+                        properties.position[0],
+                        properties.position[1],
+                        properties.position[2],
+                    ));
+                    let inv_m = m.inverse();
+                    transforms.push(Instance { m, inv_m });
                 }
                 _ => (),
             }

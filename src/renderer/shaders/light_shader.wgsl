@@ -10,6 +10,7 @@ var<uniform> u_globals: Globals;
 
 struct Instance {
     model: mat4x4<f32>;
+    inverse_model: mat4x4<f32>;
 };
 
 [[block]]
@@ -34,14 +35,12 @@ fn vs_main([[builtin(instance_index)]] instance_idx: u32, [[location(0)]] model_
     let view = u_globals.view;
     let proj = u_globals.proj;
     let model = models.models[instance_idx].model;
+    let inverse_transpose = transpose(models.models[instance_idx].inverse_model);
     var out: VertexOutput;
-    out.world_position = (model * vec4<f32>(model_position, 1.0)).xyz;
-    // TODO: doing inverse for every vertex is expensive, this can be done once per mesh on cpu
-    // TODO: fix (no inverse in wgsl -> out.world_normal = mat3(transpose(inverse(models[gl_InstanceIndex]))) * in_model_normal;
-    // TODO: transpose(mat3x3<f32>(model.x.xyz, model.y.xyz, model.z.xyz));
-    out.world_normal = model_normal;
-    out.color = color;
     out.proj_position = proj * view * model * vec4<f32>(model_position, 1.0);
+    out.world_position = (model * vec4<f32>(model_position, 1.0)).xyz;
+    out.world_normal = (inverse_transpose * vec4<f32>(model_normal, 1.0)).xyz;
+    out.color = color;
     return out;
 }
 
@@ -50,6 +49,5 @@ fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
     let normal = normalize(in.world_normal);
     let result = vec3<f32>(1.0, 1.0, 1.0);
     let gamma: f32 = 2.2;
-    //return vec4<f32>(pow(result, vec3<f32>(1.0 / gamma)), 1.0);
-    return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+    return vec4<f32>(pow(result, vec3<f32>(1.0 / gamma)), 1.0);
 }

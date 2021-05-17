@@ -47,10 +47,10 @@ fn main() -> Result<(), GameError> {
     let pipeline_bindgroup = BindGroup::new(&renderer);
     let pipeline = futures::executor::block_on(renderer::Pipeline::new(&renderer, &pipeline_bindgroup))
         .expect("Could not create pipeline");
-    //let light_pipeline_bindgroup = LightBindGroup::new(&renderer);
-    //let pipeline_light =
-    //    futures::executor::block_on(renderer::LightPipeline::new(&renderer, &light_pipeline_bindgroup))
-    //        .expect("Could not create pipeline light");
+    let light_pipeline_bindgroup = LightBindGroup::new(&renderer);
+    let pipeline_light =
+        futures::executor::block_on(renderer::LightPipeline::new(&renderer, &light_pipeline_bindgroup))
+            .expect("Could not create pipeline light");
 
     let mut vox_models = Registry::new();
     let mut physics = Physics::default();
@@ -181,14 +181,14 @@ fn main() -> Result<(), GameError> {
                     &mut renderer,
                     target,
                 );
-                /*pipeline_light.render(
+                pipeline_light.render(
                     &light_mesh_handle,
                     &lights,
                     &light_pipeline_bindgroup,
                     &follow_camera,
                     &mut renderer,
                     target,
-                );*/
+                );
                 let after_render = std::time::Instant::now();
                 println!(
                     "render-time: {}, generate_time: {}",
