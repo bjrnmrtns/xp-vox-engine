@@ -174,17 +174,17 @@ fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
 
     var result: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);
 
-    //for(var i: u32 = 0u; i < u_globals.nr_of_directional_lights; i = i + 1u) {
-    //    result = result + calculate_directional_light(normal, view_direction, directional_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
-    //}
+    for(var i: u32 = 0u; i < u_globals.nr_of_directional_lights; i = i + 1u) {
+        result = result + calculate_directional_light(normal, view_direction, directional_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
+    }
 
     for(var i: u32 = 0u; i < u_globals.nr_of_spot_lights; i = i + 1u) {
         result = result + calculate_spot_light(normal, view_direction, in.world_position, spot_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
     }
 
-    //for(var i: u32 = 0u; i < u_globals.nr_of_point_lights; i = i + 1u) {
-    //    result = result + calculate_point_light(normal, view_direction, in.world_position, spot_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
-    //}
+    for(var i: u32 = 0u; i < u_globals.nr_of_point_lights; i = i + 1u) {
+        result = result + calculate_point_light(normal, view_direction, in.world_position, spot_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
+    }
 
     let gamma: f32 = 2.2;
     let color = vec4<f32>(pow(result, vec3<f32>(1.0 / gamma)), 1.0);
