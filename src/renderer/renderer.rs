@@ -1,5 +1,4 @@
 use crate::renderer::{depth_texture::DepthTexture, error::RendererError, vertex_buffer::VertexBuffer};
-use naga::valid::{ModuleInfo, ValidationError, Validator};
 use std::collections::HashMap;
 use winit::window::Window;
 
@@ -68,32 +67,5 @@ impl Renderer {
         self.swap_chain = self
             .device
             .create_swap_chain(&self.surface, &self.swap_chain_descriptor);
-    }
-}
-
-#[test]
-fn parse_wgsl() {
-    env_logger::init();
-    let shader = std::fs::read_to_string("src/renderer/shaders/light_shader.wgsl");
-
-    match shader {
-        Ok(s) => {
-            let module = naga::front::wgsl::parse_str(&s);
-
-            match module {
-                Ok(module) => match Validator::new(naga::valid::ValidationFlags::all()).validate(&module) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        log::error!("validate: {:?}", e);
-                    }
-                },
-                Err(e) => {
-                    log::error!("parse string: {:?}", e);
-                }
-            }
-        }
-        Err(e) => {
-            log::error!("{:?}", e);
-        }
     }
 }
