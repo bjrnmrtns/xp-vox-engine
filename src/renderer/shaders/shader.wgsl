@@ -110,7 +110,7 @@ fn vs_main([[builtin(instance_index)]] instance_idx: u32, [[location(0)]] model_
     return out;
 }
 
-fn calculate_directional_light(i: u32, normal: vec3<f32>, view_direction: vec3<f32>, light: DirectionalLight, material_specular: vec3<f32>, material_shininess: f32, in_color: vec3<f32>) -> vec3<f32>
+fn calculate_directional_light(normal: vec3<f32>, view_direction: vec3<f32>, light: DirectionalLight, material_specular: vec3<f32>, material_shininess: f32, in_color: vec3<f32>) -> vec3<f32>
 {
     // negate light direction -> we want direction towards light
     let light_direction = normalize(-light.direction.xyz);
@@ -127,6 +127,45 @@ fn calculate_directional_light(i: u32, normal: vec3<f32>, view_direction: vec3<f
     return ambient + diffuse + specular;
 }
 
+fn calculate_spot_light(normal: vec3<f32>, view_direction: vec3<f32>, frag_position: vec3<f32>, light: SpotLight,  material_specular: vec3<f32>, material_shininess: f32, in_color: vec3<f32>) -> vec3<f32>
+{
+    let light_direction = normalize(light.position.xyz - frag_position);
+
+    // diffuse
+    let diff = max(dot(normal, light_direction), 0.0);
+    // specular
+    let halfway_direction = normalize(light_direction + view_direction);
+    let spec = pow(max(dot(view_direction, halfway_direction), 0.0), material_shininess);
+    // attenuation
+    let len = distance(light.position.xyz, frag_position);
+    let attenuation = 1.0 / (light.cons + light.linear * len + light.quadratic * len * len);
+    // spotlight intensity
+    let theta = dot(light_direction, normalize(-light.direction.xyz));
+    let epsilon = light.cut_off_inner - light.cut_off_outer;
+    let intensity = clamp((theta - light.cut_off_outer) / epsilon, 0.0, 1.0);
+    let ambient = light.ambient.xyz * in_color * attenuation * intensity;
+    let diffuse = light.diffuse.xyz * diff * in_color * attenuation * intensity;
+    let specular = light.specular.xyz * spec * material_specular.xyz * attenuation * intensity;
+    return ambient + diffuse + specular;
+}
+
+fn calculate_point_light(normal: vec3<f32>, view_direction: vec3<f32>, frag_position: vec3<f32>, light: SpotLight,  material_specular: vec3<f32>, material_shininess: f32, in_color: vec3<f32>) -> vec3<f32> {
+    let light_direction = normalize(light.position.xyz - frag_position);
+
+    // diffuse
+    let diff = max(dot(normal, light_direction), 0.0);
+    // specular
+    let halfway_direction = normalize(light_direction + view_direction);
+    let spec = pow(max(dot(view_direction, halfway_direction), 0.0), material_shininess);
+    // attenuation
+    let len = distance(light.position.xyz, frag_position);
+    let attenuation = 1.0 / (light.cons + light.linear * len + light.quadratic * len * len);
+
+    let ambient = light.ambient.xyz * in_color * attenuation;
+    let diffuse = light.diffuse.xyz * diff * in_color * attenuation;
+    let specular = light.specular.xyz * spec * material_specular.xyz * attenuation;
+    return ambient + diffuse + specular;
+}
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
@@ -135,9 +174,18 @@ fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
 
     var result: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);
 
-    for(var i: u32 = 0u; i < u_globals.nr_of_directional_lights; i = i + 1u) {
-        result = result + calculate_directional_light(i, normal, view_direction, directional_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
+    //for(var i: u32 = 0u; i < u_globals.nr_of_directional_lights; i = i + 1u) {
+    //    result = result + calculate_directional_light(normal, view_direction, directional_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
+    //}
+
+    for(var i: u32 = 0u; i < u_globals.nr_of_spot_lights; i = i + 1u) {
+        result = result + calculate_spot_light(normal, view_direction, in.world_position, spot_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
     }
+
+    //for(var i: u32 = 0u; i < u_globals.nr_of_point_lights; i = i + 1u) {
+    //    result = result + calculate_point_light(normal, view_direction, in.world_position, spot_lights.lights[i], u_globals.material_specular.xyz, u_globals.material_shininess, in.color);
+    //}
+
     let gamma: f32 = 2.2;
     let color = vec4<f32>(pow(result, vec3<f32>(1.0 / gamma)), 1.0);
     return color;
