@@ -1,3 +1,4 @@
+mod asset;
 pub mod cameras;
 pub mod controllers;
 pub mod entity;
