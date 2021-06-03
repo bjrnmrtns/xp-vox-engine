@@ -15,6 +15,7 @@ pub mod winit_impl;
 mod world;
 
 use crate::{
+    asset::{AssetLoader, Command},
     cameras::FollowCamera,
     controllers::{CameraController, CharacterController},
     entity::Entity,
@@ -26,7 +27,7 @@ use crate::{
         BindGroup, DirectionalProperties, Light, LightBindGroup, PointProperties, SpotProperties, VertexBuffer,
     },
     transform::Transform,
-    world::World,
+    world::Chunker,
 };
 use glam::Vec3;
 use winit::{
@@ -53,12 +54,13 @@ fn main() -> Result<(), GameError> {
         futures::executor::block_on(renderer::LightPipeline::new(&renderer, &light_pipeline_bindgroup))
             .expect("Could not create pipeline light");
 
+    let mut asset_loader = AssetLoader::new();
     let mut vox_models = Registry::new();
     let mut physics = Physics::default();
     let mut meshes = Registry::new();
     let mut lights = Registry::new();
     let mut entities = Registry::new();
-    let mut world = World::new();
+    let mut world = Chunker::new();
     let light_mesh_handle = meshes.add(Mesh::from(Cube::new(0.25)));
     lights.add(Light::Directional(DirectionalProperties::new([-1.0, -0.5, -1.0, 1.0])));
 
@@ -73,6 +75,7 @@ fn main() -> Result<(), GameError> {
     lights.add(Light::Point(PointProperties::new([8.0, 4.0, 8.0, 1.0])));
     lights.add(Light::Point(PointProperties::new([-8.0, 4.0, 8.0, 1.0])));
 
+    asset_loader.request(Command::LoadVox("res/vox-models/#treehouse/#treehouse.vox"));
     let tree_house_hanlde = vox::load_vox(
         &dot_vox::load_bytes(
             std::fs::read("res/vox-models/#treehouse/#treehouse.vox")

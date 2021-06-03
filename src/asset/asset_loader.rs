@@ -1,3 +1,4 @@
+use crate::{registry::Registry, vox, vox::Vox, world::Chunker};
 use futures::StreamExt;
 use std::{
     sync::{
@@ -8,9 +9,10 @@ use std::{
     thread::JoinHandle,
 };
 
-enum Command {
+pub enum Command {
     Quit,
     Load(i32, i32, i32),
+    LoadVox(&'static str),
 }
 
 pub struct Chunk;
@@ -29,13 +31,42 @@ impl AssetLoader {
     pub fn new() -> Self {
         let (send_load, receive_load): (Sender<Command>, Receiver<Command>) = mpsc::channel();
         let (send_result, receive_result): (Sender<Result>, Receiver<Result>) = mpsc::channel();
-        let join_handle = thread::spawn(move || loop {
-            match receive_load.recv().unwrap() {
-                Command::Quit => {
-                    return ();
-                }
-                Command::Load(x, y, z) => {
-                    send_result.send(Result::Chunk(Chunk));
+        let join_handle = thread::spawn(move || {
+            let mut vox_models = Registry::new();
+            let mut world = Chunker::new();
+            loop {
+                match receive_load.recv().unwrap() {
+                    Command::Quit => {
+                        return ();
+                    }
+                    Command::Load(x, y, z) => {
+                        send_result.send(Result::Chunk(Chunk));
+                    }
+                    Command::LoadVox(path) => {
+                        let tree_house_hanlde = vox::load_vox(
+                            &dot_vox::load_bytes(std::fs::read(path).unwrap().as_slice()).unwrap(),
+                            &mut vox_models,
+                        );
+                        world.add(tree_house_hanlde.clone(), [0, 0, 0], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [0, 0, 128], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [128, 0, 128], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [128, 0, 0], &vox_models);
+
+                        world.add(tree_house_hanlde.clone(), [128, 0, 0], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [128, 0, 128], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [256, 0, 128], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [256, 0, 0], &vox_models);
+
+                        world.add(tree_house_hanlde.clone(), [0, 0, 128], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [0, 0, 256], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [128, 0, 256], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [128, 0, 128], &vox_models);
+
+                        world.add(tree_house_hanlde.clone(), [128, 0, 128], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [128, 0, 256], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [256, 0, 256], &vox_models);
+                        world.add(tree_house_hanlde.clone(), [256, 0, 128], &vox_models);
+                    }
                 }
             }
         });
@@ -46,8 +77,8 @@ impl AssetLoader {
         }
     }
 
-    pub fn request(&mut self, x: i32, y: i32, z: i32) {
-        self.send_load.send(Command::Load(x, y, z));
+    pub fn request(&mut self, command: Command) {
+        self.send_load.send(command);
     }
 
     pub fn try_retrieve(&mut self) -> Option<Chunk> {
