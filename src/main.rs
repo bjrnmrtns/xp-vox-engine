@@ -1,5 +1,6 @@
 mod asset;
 pub mod cameras;
+mod chunker;
 pub mod controllers;
 pub mod entity;
 pub mod generators;
@@ -23,11 +24,9 @@ use crate::{
     mesh::{Cube, IcoSphere, Mesh},
     physics::{Body, BodyStatus, CollisionShape, Cuboid, Physics, Sphere},
     registry::Registry,
-    renderer::{
-        BindGroup, DirectionalProperties, Light, LightBindGroup, PointProperties, SpotProperties, VertexBuffer,
-    },
+    renderer::{BindGroup, DirectionalProperties, Light, LightBindGroup, PointProperties, SpotProperties},
     transform::Transform,
-    world::{Chunker, World},
+    world::World,
 };
 use glam::Vec3;
 use winit::{
@@ -55,7 +54,6 @@ fn main() -> Result<(), GameError> {
             .expect("Could not create pipeline light");
 
     let mut asset_loader = AssetLoader::new();
-    let mut vox_models = Registry::new();
     let mut physics = Physics::default();
     let mut meshes = Registry::new();
     let mut lights = Registry::new();
@@ -76,15 +74,6 @@ fn main() -> Result<(), GameError> {
     lights.add(Light::Point(PointProperties::new([-8.0, 4.0, 8.0, 1.0])));
 
     asset_loader.request(Command::LoadVox("res/vox-models/#treehouse/#treehouse.vox"));
-    let tree_house_hanlde = vox::load_vox(
-        &dot_vox::load_bytes(
-            std::fs::read("res/vox-models/#treehouse/#treehouse.vox")
-                .unwrap()
-                .as_slice(),
-        )
-        .unwrap(),
-        &mut vox_models,
-    );
 
     let cube = entities.add(Entity {
         mesh_handle: meshes.add(Mesh::from(Cube::new(1.0))),

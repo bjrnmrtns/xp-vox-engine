@@ -1,5 +1,4 @@
-use crate::{mesh::Mesh, registry::Registry, transform::Transform, vox, vox::Vox, world::Chunker};
-use futures::StreamExt;
+use crate::{chunker::Chunker, mesh::Mesh, registry::Registry, transform::Transform, vox};
 use std::{
     sync::{
         mpsc,
@@ -14,8 +13,6 @@ pub enum Command {
     Load(i32, i32, i32),
     LoadVox(&'static str),
 }
-
-pub struct Chunk;
 
 enum Result {
     Chunk(Mesh, Transform, (i32, i32, i32)),
@@ -42,7 +39,7 @@ impl AssetLoader {
                     Command::Load(x, y, z) => {
                         let (mesh, transform) = chunker.generate_chunk(&vox_models, (x, y, z));
                         if let Some(mesh) = mesh {
-                            send_result.send(Result::Chunk(mesh, transform, (x, y, z)));
+                            send_result.send(Result::Chunk(mesh, transform, (x, y, z))).unwrap();
                         }
                     }
                     Command::LoadVox(path) => {
@@ -81,7 +78,7 @@ impl AssetLoader {
     }
 
     pub fn request(&mut self, command: Command) {
-        self.send_load.send(command);
+        self.send_load.send(command).unwrap();
     }
 
     pub fn try_retrieve(&mut self) -> Option<(Mesh, Transform, (i32, i32, i32))> {
@@ -95,7 +92,7 @@ impl AssetLoader {
     }
 
     pub fn quit_join(self) {
-        self.send_load.send(Command::Quit);
+        self.send_load.send(Command::Quit).unwrap();
         self.join_handle.join().unwrap();
     }
 }

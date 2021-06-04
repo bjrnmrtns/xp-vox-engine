@@ -7,7 +7,7 @@ use crate::{
         Camera, Light, Renderer,
     },
 };
-use std::{borrow::Cow, io::Read};
+use std::borrow::Cow;
 
 pub struct Pipeline {
     render_pipeline: wgpu::RenderPipeline,

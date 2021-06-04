@@ -7,8 +7,7 @@ use crate::{
     },
 };
 use glam::{Mat4, Vec3};
-use std::{borrow::Cow, io::Read};
-use wgpu::ShaderFlags;
+use std::borrow::Cow;
 
 pub struct LightPipeline {
     render_pipeline: wgpu::RenderPipeline,
