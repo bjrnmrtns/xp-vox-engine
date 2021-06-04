@@ -60,3 +60,4 @@ TODO 18: Check if MainEventsCleared is a better place to do all redrawing iso Re
 TODO 26: Figure out voxel rendering big world
 [] try use meshing 32x32x32 chunks
 TODO 29: simulate ax trees, by left mouse click and remove all trees in a certain range from the player
+TODO 31: world window implementation (utility to easily calculate what part of the world needs to be chunked
