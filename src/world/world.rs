@@ -32,12 +32,15 @@ impl World {
                 for y in added[1].clone() {
                     for x in added[0].clone() {
                         if let Some(previous_chunk) = self.chunks.get_chunk([x, y, z]) {
-                            if !previous_chunk.just_added {
+                            if previous_chunk.location.0 != x
+                                || previous_chunk.location.1 != y
+                                || previous_chunk.location.2 != z
+                            {
+                                asset_loader.request(Command::Load(x, y, z));
                                 if let Some(previous_entity) = entities.get(&previous_chunk.entity) {
                                     meshes.remove(previous_entity.mesh_handle.clone());
                                     entities.remove(previous_chunk.entity.clone());
                                 }
-                                asset_loader.request(Command::Load(x, y, z));
                             }
                         } else {
                             asset_loader.request(Command::Load(x, y, z));
