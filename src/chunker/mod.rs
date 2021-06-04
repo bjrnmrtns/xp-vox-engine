@@ -15,24 +15,24 @@ pub struct Chunker {
     chunk_size: usize,
 }
 
+fn chunk_number_and_offset(start: i32, chunk_size: usize) -> (i32, usize) {
+    if start >= 0 {
+        let chunk_number = start / chunk_size as i32;
+        let offset = start as usize % chunk_size;
+        (chunk_number, offset)
+    } else {
+        let chunk_number = (start + 1) / chunk_size as i32 - 1;
+        let offset = chunk_size - (-start as usize % (chunk_size + 1));
+        (chunk_number, offset)
+    }
+}
+
 impl Chunker {
     pub fn new() -> Self {
         Self {
             entities: vec![],
             chunk_entity_map: HashMap::new(),
             chunk_size: 32,
-        }
-    }
-
-    fn chunk_number_and_offset(start: i32, chunk_size: usize) -> (i32, usize) {
-        if start >= 0 {
-            let chunk_number = start / chunk_size as i32;
-            let offset = start as usize % chunk_size;
-            (chunk_number, offset)
-        } else {
-            let chunk_number = (start + 1) / chunk_size as i32 - 1;
-            let offset = chunk_size - (-start as usize % (chunk_size + 1));
-            (chunk_number, offset)
         }
     }
 
@@ -44,17 +44,17 @@ impl Chunker {
         let y_min = position[1];
         let z_min = position[2];
         let mut z_size = vox.z_size;
-        let (mut z_number, mut target_z_offset) = Chunker::chunk_number_and_offset(z_min, self.chunk_size);
+        let (mut z_number, mut target_z_offset) = chunk_number_and_offset(z_min, self.chunk_size);
         let mut source_z_offset = 0;
         while z_size != 0 {
             let z_current_size = std::cmp::min(z_size, self.chunk_size - target_z_offset);
             let mut y_size = vox.y_size;
-            let (mut y_number, mut target_y_offset) = Chunker::chunk_number_and_offset(y_min, self.chunk_size);
+            let (mut y_number, mut target_y_offset) = chunk_number_and_offset(y_min, self.chunk_size);
             let mut source_y_offset = 0;
             while y_size != 0 {
                 let y_current_size = std::cmp::min(y_size, self.chunk_size - target_y_offset);
                 let mut x_size = vox.x_size;
-                let (mut x_number, mut target_x_offset) = Chunker::chunk_number_and_offset(x_min, self.chunk_size);
+                let (mut x_number, mut target_x_offset) = chunk_number_and_offset(x_min, self.chunk_size);
                 let mut source_x_offset = 0;
                 while x_size != 0 {
                     let x_current_size = std::cmp::min(x_size, self.chunk_size - target_x_offset);

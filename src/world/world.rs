@@ -49,6 +49,7 @@ impl World {
         if let Some((mesh, transform, location)) = asset_loader.try_retrieve() {
             let mesh_handle = meshes.add(mesh);
             let chunk = Chunk {
+                location,
                 entity: entities.add(Entity {
                     mesh_handle,
                     collision_shape: None,
@@ -58,18 +59,5 @@ impl World {
             };
             self.chunks.set_chunk([location.0, location.1, location.2], Some(chunk));
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::world::Chunker;
-
-    #[test]
-    fn offset_test() {
-        assert_eq!(Chunker::chunk_number_and_offset(-5, 32), (-1, 27));
-        assert_eq!(Chunker::chunk_number_and_offset(-5, 4), (-2, 3));
-        assert_eq!(Chunker::chunk_number_and_offset(2, 4), (0, 2));
-        assert_eq!(Chunker::chunk_number_and_offset(5, 4), (1, 1));
     }
 }

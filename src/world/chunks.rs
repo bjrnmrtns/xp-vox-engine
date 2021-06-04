@@ -2,6 +2,7 @@ use crate::{entity::Entity, registry::Handle};
 
 #[derive(Clone)]
 pub struct Chunk {
+    pub location: (i32, i32, i32),
     pub entity: Handle<Entity>,
     pub just_added: bool,
 }
