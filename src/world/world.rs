@@ -1,4 +1,5 @@
 use crate::{
+    asset::{AssetLoader, Command},
     entity::Entity,
     mesh::{Mesh, Plane, Vertex},
     registry::{Handle, Registry},
@@ -208,6 +209,7 @@ impl World {
         position: [f32; 3],
         meshes: &mut Registry<Mesh>,
         entities: &mut Registry<Entity>,
+        asset_loader: &mut AssetLoader,
     ) {
         self.chunks.clear_just_added();
         self.chunks.set_position(position);
@@ -222,38 +224,26 @@ impl World {
                                     meshes.remove(previous_entity.mesh_handle.clone());
                                     entities.remove(previous_chunk.entity.clone());
                                 }
-                                /*let (mesh, transform) = self.generate_chunk(registry, (x, y, z));
-                                if let Some(mesh) = mesh {
-                                    let mesh_handle = meshes.add(mesh);
-                                    let chunk = Chunk {
-                                        entity: entities.add(Entity {
-                                            mesh_handle,
-                                            collision_shape: None,
-                                            transform,
-                                        }),
-                                        just_added: true,
-                                    };
-                                    self.chunks.set_chunk([x, y, z], Some(chunk));
-                                }*/
+                                asset_loader.request(Command::Load(x, y, z));
                             }
                         } else {
-                            /*let (mesh, transform) = self.generate_chunk(registry, (x, y, z));
-                            if let Some(mesh) = mesh {
-                                let mesh_handle = meshes.add(mesh);
-                                let chunk = Chunk {
-                                    entity: entities.add(Entity {
-                                        mesh_handle,
-                                        collision_shape: None,
-                                        transform,
-                                    }),
-                                    just_added: true,
-                                };
-                                self.chunks.set_chunk([x, y, z], Some(chunk));
-                            }*/
+                            asset_loader.request(Command::Load(x, y, z));
                         }
                     }
                 }
             }
+        }
+        if let Some((mesh, transform, location)) = asset_loader.try_retrieve() {
+            let mesh_handle = meshes.add(mesh);
+            let chunk = Chunk {
+                entity: entities.add(Entity {
+                    mesh_handle,
+                    collision_shape: None,
+                    transform,
+                }),
+                just_added: true,
+            };
+            self.chunks.set_chunk([location.0, location.1, location.2], Some(chunk));
         }
     }
 }

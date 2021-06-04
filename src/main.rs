@@ -27,7 +27,7 @@ use crate::{
         BindGroup, DirectionalProperties, Light, LightBindGroup, PointProperties, SpotProperties, VertexBuffer,
     },
     transform::Transform,
-    world::Chunker,
+    world::{Chunker, World},
 };
 use glam::Vec3;
 use winit::{
@@ -60,7 +60,7 @@ fn main() -> Result<(), GameError> {
     let mut meshes = Registry::new();
     let mut lights = Registry::new();
     let mut entities = Registry::new();
-    let mut world = Chunker::new();
+    let mut world = World::new();
     let light_mesh_handle = meshes.add(Mesh::from(Cube::new(0.25)));
     lights.add(Light::Directional(DirectionalProperties::new([-1.0, -0.5, -1.0, 1.0])));
 
@@ -85,26 +85,6 @@ fn main() -> Result<(), GameError> {
         .unwrap(),
         &mut vox_models,
     );
-
-    world.add(tree_house_hanlde.clone(), [0, 0, 0], &vox_models);
-    world.add(tree_house_hanlde.clone(), [0, 0, 128], &vox_models);
-    world.add(tree_house_hanlde.clone(), [128, 0, 128], &vox_models);
-    world.add(tree_house_hanlde.clone(), [128, 0, 0], &vox_models);
-
-    world.add(tree_house_hanlde.clone(), [128, 0, 0], &vox_models);
-    world.add(tree_house_hanlde.clone(), [128, 0, 128], &vox_models);
-    world.add(tree_house_hanlde.clone(), [256, 0, 128], &vox_models);
-    world.add(tree_house_hanlde.clone(), [256, 0, 0], &vox_models);
-
-    world.add(tree_house_hanlde.clone(), [0, 0, 128], &vox_models);
-    world.add(tree_house_hanlde.clone(), [0, 0, 256], &vox_models);
-    world.add(tree_house_hanlde.clone(), [128, 0, 256], &vox_models);
-    world.add(tree_house_hanlde.clone(), [128, 0, 128], &vox_models);
-
-    world.add(tree_house_hanlde.clone(), [128, 0, 128], &vox_models);
-    world.add(tree_house_hanlde.clone(), [128, 0, 256], &vox_models);
-    world.add(tree_house_hanlde.clone(), [256, 0, 256], &vox_models);
-    world.add(tree_house_hanlde.clone(), [256, 0, 128], &vox_models);
 
     let cube = entities.add(Entity {
         mesh_handle: meshes.add(Mesh::from(Cube::new(1.0))),
@@ -161,10 +141,10 @@ fn main() -> Result<(), GameError> {
                 let player_position = entities.get(&character).unwrap().transform.clone().translation;
                 let before_generate = std::time::Instant::now();
                 world.generate_around(
-                    &vox_models,
                     [player_position.x, player_position.y, player_position.z],
                     &mut meshes,
                     &mut entities,
+                    &mut asset_loader,
                 );
                 let after_generate = std::time::Instant::now();
 
