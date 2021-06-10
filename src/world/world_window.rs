@@ -1,5 +1,3 @@
-use glam::Vec3;
-
 pub struct WorldWindow {
     center: [f32; 3],
     inner_size: [f32; 3],
@@ -54,11 +52,13 @@ impl WorldWindow {
     }
 
     pub fn get_chunks_within(&self, view_size: [f32; 3]) -> Vec<[i32; 3]> {
-        let mut output = Vec::new();
         let chunk_length = self.chunk_size as f32 * self.voxel_size;
         let x_range = Self::get_chunks_with_1d(self.center[0], view_size[0], chunk_length);
         let y_range = Self::get_chunks_with_1d(self.center[1], view_size[1], chunk_length);
         let z_range = Self::get_chunks_with_1d(self.center[2], view_size[2], chunk_length);
+        let output = (z_range.0..=z_range.1)
+            .flat_map(|z| (y_range.0..=y_range.1).flat_map(move |y| (x_range.0..=x_range.1).map(move |x| [x, y, z])))
+            .collect::<Vec<_>>();
         output
     }
 }
@@ -66,10 +66,9 @@ impl WorldWindow {
 #[cfg(test)]
 mod tests {
     use crate::world::world_window::WorldWindow;
-    use glam::{IVec3, Vec3};
 
     #[test]
-    fn world_window_test() {
+    fn move_to_position_test() {
         let mut window = WorldWindow::new([0.0, 0.0, 0.0], [4.0, 4.0, 4.0], 0.1, 32);
         window.move_to_position([-3.0, -3.0, -3.0]);
         let center = window.get_center();
@@ -80,5 +79,22 @@ mod tests {
         window.move_to_position([2.0, -3.0, -3.0]);
         let center = window.get_center();
         assert_eq!(center[0], 1.0);
+    }
+
+    #[test]
+    fn get_chunks_with_1d_test() {
+        let range = WorldWindow::get_chunks_with_1d(-1.1, 4.0, 1.0);
+        assert_eq!(range.0, -4);
+        assert_eq!(range.1, 0);
+    }
+    #[test]
+    fn get_chunks_within() {
+        let window = WorldWindow::new([0.0, 0.0, 0.0], [4.0, 4.0, 4.0], 0.1, 32);
+        let chunks = window.get_chunks_within([12.9, 12.9, 12.9]);
+        let mut i = 0;
+        for chunk in chunks {
+            i = i + 1;
+            println!("{} {:?}", i, chunk);
+        }
     }
 }
