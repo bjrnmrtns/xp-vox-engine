@@ -29,6 +29,7 @@ use crate::{
     world::World,
 };
 use glam::Vec3;
+use std::thread::JoinHandle;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -184,7 +185,10 @@ fn main() -> Result<(), GameError> {
                     follow_camera.set_aspect_ratio(new_inner_size.width as f32 / new_inner_size.height as f32);
                     futures::executor::block_on(renderer.resize(new_inner_size.width, new_inner_size.height));
                 }
-                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                WindowEvent::CloseRequested => {
+                    asset_loader.quit_join();
+                    *control_flow = ControlFlow::Exit
+                }
                 WindowEvent::KeyboardInput { .. } => {
                     winit_impl::handle_input(&mut input_all, &event);
                 }

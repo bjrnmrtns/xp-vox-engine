@@ -19,9 +19,9 @@ enum Result {
 }
 
 pub struct AssetLoader {
-    send_load: Sender<Command>,
+    pub(crate) send_load: Sender<Command>,
     receive_result: Receiver<Result>,
-    join_handle: JoinHandle<()>,
+    pub join_handle: Option<JoinHandle<()>>,
 }
 
 impl AssetLoader {
@@ -73,7 +73,7 @@ impl AssetLoader {
         Self {
             send_load,
             receive_result,
-            join_handle,
+            join_handle: Some(join_handle),
         }
     }
 
@@ -91,8 +91,8 @@ impl AssetLoader {
         }
     }
 
-    pub fn quit_join(self) {
+    pub fn quit_join(&mut self) {
         self.send_load.send(Command::Quit).unwrap();
-        self.join_handle.join().unwrap();
+        self.join_handle.take().map(JoinHandle::join);
     }
 }
