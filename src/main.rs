@@ -29,7 +29,6 @@ use crate::{
     world::World,
 };
 use glam::Vec3;
-use std::thread::JoinHandle;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
