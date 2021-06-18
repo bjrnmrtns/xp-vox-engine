@@ -23,7 +23,7 @@ pub struct World {
     voxel_size: f32,
     chunk_size_in_voxels: u32,
     walking_window: [f32; 3],
-    world_size_in_chunks: [usize; 3],
+    world_size_in_chunks_radius: [usize; 3],
 }
 
 impl World {
@@ -36,7 +36,7 @@ impl World {
             voxel_size: 0.1,
             chunk_size_in_voxels: 16,
             walking_window: [10.0, 10.0, 10.0],
-            world_size_in_chunks: [10, 10, 10],
+            world_size_in_chunks_radius: [10, 10, 10],
         }
     }
 
@@ -76,13 +76,67 @@ impl World {
         self.position = Some(position);
     }
 
+    fn within_distance_1d(first: i32, second: i32, distance: usize) -> bool {
+        (first - second).abs() <= distance as i32
+    }
+
+    fn within_distance_3d(first: [i32; 3], second: [i32; 3], distance: [usize; 3]) -> bool {
+        Self::within_distance_1d(first[0], second[0], distance[0])
+            && Self::within_distance_1d(first[1], second[1], distance[1])
+            && Self::within_distance_1d(first[2], second[2], distance[2])
+    }
+
+    fn outside_distance_3d(first: [i32; 3], second: [i32; 3], distance: [usize; 3]) -> bool {
+        !Self::within_distance_3d(first, second, distance)
+    }
+
     pub fn delete_obsolete(&mut self /*vertex buffers / meshes / entities to delete*/) {
-        if let Some(previous_center) = self.previous_center {
+        if let (Some(previous_center), Some(center)) = (self.previous_center, self.center) {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
             let chunk_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
-            self.chunks.set(chunk_index, None);
+            for z in chunk_index[2] - self.world_size_in_chunks_radius[2] as i32
+                ..chunk_index[2] + self.world_size_in_chunks_radius[2] as i32
+            {
+                for y in chunk_index[1] - self.world_size_in_chunks_radius[1] as i32
+                    ..chunk_index[1] + self.world_size_in_chunks_radius[1] as i32
+                {
+                    for x in chunk_index[0] - self.world_size_in_chunks_radius[0] as i32
+                        ..chunk_index[0] + self.world_size_in_chunks_radius[0] as i32
+                    {
+                        let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
+                        if Self::outside_distance_3d(center_index, [x, y, z], self.world_size_in_chunks_radius) {
+                            self.chunks.set(chunk_index, None);
+                        }
+                    }
+                }
+            }
         }
     }
 
-    pub fn generate_new() {}
+    pub fn generate_new(&mut self) {
+        if let Some(center) = self.center {
+            let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
+            let chunk_index = Self::position_to_chunk_index_3d(center, chunk_length);
+            for z in chunk_index[2] - self.world_size_in_chunks_radius[2] as i32
+                ..chunk_index[2] + self.world_size_in_chunks_radius[2] as i32
+            {
+                for y in chunk_index[1] - self.world_size_in_chunks_radius[1] as i32
+                    ..chunk_index[1] + self.world_size_in_chunks_radius[1] as i32
+                {
+                    for x in chunk_index[0] - self.world_size_in_chunks_radius[0] as i32
+                        ..chunk_index[0] + self.world_size_in_chunks_radius[0] as i32
+                    {
+                        let center_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
+                        if let Some(previous_center) = self.previous_center {
+                            if Self::outside_distance_3d(center_index, [x, y, z], self.world_size_in_chunks_radius) {
+                                self.chunks.set(chunk_index, Some(Chunk::new(x, y, z)));
+                            }
+                        } else {
+                            self.chunks.set(chunk_index, Some(Chunk::new(x, y, z)));
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
