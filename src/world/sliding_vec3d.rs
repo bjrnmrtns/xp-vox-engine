@@ -21,17 +21,17 @@ impl<T: Default + Clone> Vec3dSliding<T> {
         (self.max[index] + pos) as usize % self.size[index]
     }
 
-    pub fn set(&mut self, x: i32, y: i32, z: i32, value: T) {
-        let x = self.slide_position(x, 0);
-        let y = self.slide_position(y, 1);
-        let z = self.slide_position(z, 2);
+    pub fn set(&mut self, pos: [i32; 3], value: T) {
+        let x = self.slide_position(pos[0], 0);
+        let y = self.slide_position(pos[1], 1);
+        let z = self.slide_position(pos[2], 2);
         self.data[z * self.size[1] * self.size[0] + y * self.size[0] + x] = value;
     }
 
-    pub fn get(&mut self, x: i32, y: i32, z: i32) -> T {
-        let x = self.slide_position(x, 0);
-        let y = self.slide_position(y, 1);
-        let z = self.slide_position(z, 2);
+    pub fn get(&mut self, pos: [i32; 3]) -> T {
+        let x = self.slide_position(pos[0], 0);
+        let y = self.slide_position(pos[1], 1);
+        let z = self.slide_position(pos[2], 2);
         self.data[z * self.size[1] * self.size[0] + y * self.size[0] + x].clone()
     }
 }
@@ -61,9 +61,11 @@ mod tests {
     #[test]
     fn slide_set_test() {
         let mut slid_win = Vec3dSliding::new([5, 5, 5]);
-        slid_win.set(0, 0, 0, 3);
-        assert_eq!(3, slid_win.get(0, 0, 0));
-        slid_win.set(100, 100, 0, 8);
-        assert_eq!(8, slid_win.get(100, 100, 0))
+        let pos = [0, 0, 0];
+        slid_win.set(pos, 3);
+        let pos = [100, 100, 0];
+        assert_eq!(3, slid_win.get(pos));
+        slid_win.set(pos, 8);
+        assert_eq!(8, slid_win.get(pos));
     }
 }
