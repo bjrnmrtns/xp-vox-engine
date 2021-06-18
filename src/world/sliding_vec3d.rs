@@ -35,3 +35,35 @@ impl<T: Default + Clone> Vec3dSliding<T> {
         self.data[z * self.size[1] * self.size[0] + y * self.size[0] + x].clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::world::sliding_vec3d::Vec3dSliding;
+
+    #[test]
+    fn sliding_position_test() {
+        let mut slid_win: Vec3dSliding<i32> = Vec3dSliding::new([1, 1, 1]);
+        assert_eq!(0, slid_win.slide_position(0, 0));
+        assert_eq!(0, slid_win.slide_position(1, 0));
+        assert_eq!(0, slid_win.slide_position(2, 0));
+        assert_eq!(0, slid_win.slide_position(-1, 0));
+    }
+
+    #[test]
+    fn sliding_position_test2() {
+        let mut slid_win: Vec3dSliding<i32> = Vec3dSliding::new([2, 2, 2]);
+        assert_eq!(0, slid_win.slide_position(0, 0));
+        assert_eq!(1, slid_win.slide_position(1, 0));
+        assert_eq!(0, slid_win.slide_position(2, 0));
+        assert_eq!(1, slid_win.slide_position(-1, 0));
+    }
+
+    #[test]
+    fn slide_set_test() {
+        let mut slid_win = Vec3dSliding::new([5, 5, 5]);
+        slid_win.set(0, 0, 0, 3);
+        assert_eq!(3, slid_win.get(0, 0, 0));
+        slid_win.set(100, 100, 0, 8);
+        assert_eq!(8, slid_win.get(100, 100, 0))
+    }
+}
