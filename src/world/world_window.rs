@@ -1,17 +1,29 @@
+use std::{collections::HashSet, iter::FromIterator};
+
 pub struct WorldWindow {
+    previous_chunks: Option<HashSet<[i32; 3]>>,
     center: [f32; 3],
     inner_size: [f32; 3],
     voxel_size: f32,
-    chunk_size: u32,
+    chunk_size_in_voxels: u32,
+    view_size: [f32; 3],
 }
 
 impl WorldWindow {
-    pub fn new(position: [f32; 3], inner_size: [f32; 3], voxel_size: f32, chunk_size: u32) -> Self {
+    pub fn new(
+        position: [f32; 3],
+        inner_size: [f32; 3],
+        voxel_size: f32,
+        chunk_size_in_voxels: u32,
+        view_size: [f32; 3],
+    ) -> Self {
         Self {
+            previous_chunks: None,
             center: position,
             inner_size,
             voxel_size,
-            chunk_size,
+            chunk_size_in_voxels,
+            view_size,
         }
     }
 
@@ -51,16 +63,26 @@ impl WorldWindow {
         ];
     }
 
-    pub fn get_chunks_within(&self, view_size: [f32; 3]) -> Vec<[i32; 3]> {
-        let chunk_length = self.chunk_size as f32 * self.voxel_size;
-        let x_range = Self::get_chunks_with_1d(self.center[0], view_size[0], chunk_length);
-        let y_range = Self::get_chunks_with_1d(self.center[1], view_size[1], chunk_length);
-        let z_range = Self::get_chunks_with_1d(self.center[2], view_size[2], chunk_length);
-        let output = (z_range.0..=z_range.1)
-            .flat_map(|z| (y_range.0..=y_range.1).flat_map(move |y| (x_range.0..=x_range.1).map(move |x| [x, y, z])))
-            .collect::<Vec<_>>();
-        output
-    }
+    /*    pub fn get_chunks_within(&mut self) -> (HashSet<[i32; 3]>) {
+           let chunk_length = self.chunk_size as f32 * self.voxel_size;
+           let x_range = Self::get_chunks_with_1d(self.center[0], self.view_size[0], chunk_length);
+           let y_range = Self::get_chunks_with_1d(self.center[1], self.view_size[1], chunk_length);
+           let z_range = Self::get_chunks_with_1d(self.center[2], self.view_size[2], chunk_length);
+           let within_region = (z_range.0..=z_range.1)
+               .flat_map(|z| (y_range.0..=y_range.1).flat_map(move |y| (x_range.0..=x_range.1).map(move |x| [x, y, z])))
+               .collect::<HashSet<_>>();
+           let (added, deleted) = if let Some(previous_chunks) = self.previous_chunks.clone() {
+               let deleted = previous_chunks.difference(&within_region);
+               let added = within_region.difference(&previous_chunks);
+               (added.collect(), deleted.collect())
+           } else {
+               (HashSet::new(), HashSet::new())
+           };
+           self.previous_chunks = Some(within_region.clone());
+           (added)
+       }
+
+    */
 }
 
 #[cfg(test)]
@@ -69,7 +91,7 @@ mod tests {
 
     #[test]
     fn move_to_position_test() {
-        let mut window = WorldWindow::new([0.0, 0.0, 0.0], [4.0, 4.0, 4.0], 0.1, 32);
+        let mut window = WorldWindow::new([0.0, 0.0, 0.0], [4.0, 4.0, 4.0], 0.1, 32, [0.0, 0.0, 0.0]);
         window.move_to_position([-3.0, -3.0, -3.0]);
         let center = window.get_center();
         assert_eq!(center[0], -1.0);
@@ -89,8 +111,8 @@ mod tests {
     }
     #[test]
     fn get_chunks_within() {
-        let window = WorldWindow::new([0.0, 0.0, 0.0], [4.0, 4.0, 4.0], 0.1, 32);
-        let chunks = window.get_chunks_within([12.9, 12.9, 12.9]);
+        let window = WorldWindow::new([0.0, 0.0, 0.0], [4.0, 4.0, 4.0], 0.1, 32, [12.9, 12.9, 12.9]);
+        let chunks = window.get_chunks_within();
         let mut i = 0;
         for chunk in chunks {
             i = i + 1;
