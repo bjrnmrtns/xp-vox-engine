@@ -93,19 +93,19 @@ impl World {
     pub fn delete_obsolete(&mut self /*vertex buffers / meshes / entities to delete*/) {
         if let (Some(previous_center), Some(center)) = (self.previous_center, self.center) {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
-            let chunk_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
-            for z in chunk_index[2] - self.world_size_in_chunks_radius[2] as i32
-                ..chunk_index[2] + self.world_size_in_chunks_radius[2] as i32
+            let previous_center_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
+            for z in previous_center_index[2] - self.world_size_in_chunks_radius[2] as i32
+                ..previous_center_index[2] + self.world_size_in_chunks_radius[2] as i32
             {
-                for y in chunk_index[1] - self.world_size_in_chunks_radius[1] as i32
-                    ..chunk_index[1] + self.world_size_in_chunks_radius[1] as i32
+                for y in previous_center_index[1] - self.world_size_in_chunks_radius[1] as i32
+                    ..previous_center_index[1] + self.world_size_in_chunks_radius[1] as i32
                 {
-                    for x in chunk_index[0] - self.world_size_in_chunks_radius[0] as i32
-                        ..chunk_index[0] + self.world_size_in_chunks_radius[0] as i32
+                    for x in previous_center_index[0] - self.world_size_in_chunks_radius[0] as i32
+                        ..previous_center_index[0] + self.world_size_in_chunks_radius[0] as i32
                     {
                         let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
                         if Self::outside_distance_3d(center_index, [x, y, z], self.world_size_in_chunks_radius) {
-                            self.chunks.set(chunk_index, None);
+                            self.chunks.set(previous_center_index, None);
                         }
                     }
                 }
@@ -116,23 +116,27 @@ impl World {
     pub fn generate_new(&mut self) {
         if let Some(center) = self.center {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
-            let chunk_index = Self::position_to_chunk_index_3d(center, chunk_length);
-            for z in chunk_index[2] - self.world_size_in_chunks_radius[2] as i32
-                ..chunk_index[2] + self.world_size_in_chunks_radius[2] as i32
+            let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
+            for z in center_index[2] - self.world_size_in_chunks_radius[2] as i32
+                ..center_index[2] + self.world_size_in_chunks_radius[2] as i32
             {
-                for y in chunk_index[1] - self.world_size_in_chunks_radius[1] as i32
-                    ..chunk_index[1] + self.world_size_in_chunks_radius[1] as i32
+                for y in center_index[1] - self.world_size_in_chunks_radius[1] as i32
+                    ..center_index[1] + self.world_size_in_chunks_radius[1] as i32
                 {
-                    for x in chunk_index[0] - self.world_size_in_chunks_radius[0] as i32
-                        ..chunk_index[0] + self.world_size_in_chunks_radius[0] as i32
+                    for x in center_index[0] - self.world_size_in_chunks_radius[0] as i32
+                        ..center_index[0] + self.world_size_in_chunks_radius[0] as i32
                     {
-                        let center_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
                         if let Some(previous_center) = self.previous_center {
-                            if Self::outside_distance_3d(center_index, [x, y, z], self.world_size_in_chunks_radius) {
-                                self.chunks.set(chunk_index, Some(Chunk::new(x, y, z)));
+                            let previous_center_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
+                            if Self::outside_distance_3d(
+                                previous_center_index,
+                                [x, y, z],
+                                self.world_size_in_chunks_radius,
+                            ) {
+                                self.chunks.set(center_index, Some(Chunk::new(x, y, z)));
                             }
                         } else {
-                            self.chunks.set(chunk_index, Some(Chunk::new(x, y, z)));
+                            self.chunks.set(center_index, Some(Chunk::new(x, y, z)));
                         }
                     }
                 }
