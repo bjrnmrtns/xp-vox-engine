@@ -40,7 +40,7 @@ impl World {
             voxel_size: 0.1,
             chunk_size_in_voxels: chunk_size as u32,
             walking_window: [10.0, 10.0, 10.0],
-            world_size_in_chunks_radius: [2, 2, 2],
+            world_size_in_chunks_radius: [4, 4, 4],
         }
     }
 
@@ -125,13 +125,13 @@ impl World {
                 let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
                 let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
                 for z in center_index[2] - self.world_size_in_chunks_radius[2] as i32
-                    ..center_index[2] + self.world_size_in_chunks_radius[2] as i32
+                    ..center_index[2] + self.world_size_in_chunks_radius[2] as i32 + 1
                 {
                     for y in center_index[1] - self.world_size_in_chunks_radius[1] as i32
-                        ..center_index[1] + self.world_size_in_chunks_radius[1] as i32
+                        ..center_index[1] + self.world_size_in_chunks_radius[1] as i32 + 1
                     {
                         for x in center_index[0] - self.world_size_in_chunks_radius[0] as i32
-                            ..center_index[0] + self.world_size_in_chunks_radius[0] as i32
+                            ..center_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
                         {
                             asset_loader.request(Command::Load(x, y, z));
                             self.chunks.set(center_index, Some(Chunk::new(x, y, z)));
@@ -146,13 +146,13 @@ impl World {
                 if center_index != previous_center_index {
                     println!("prev: {:?}, current: {:?}", previous_center_index, center_index);
                     for z in center_index[2] - self.world_size_in_chunks_radius[2] as i32
-                        ..center_index[2] + self.world_size_in_chunks_radius[2] as i32
+                        ..center_index[2] + self.world_size_in_chunks_radius[2] as i32 + 1
                     {
                         for y in center_index[1] - self.world_size_in_chunks_radius[1] as i32
-                            ..center_index[1] + self.world_size_in_chunks_radius[1] as i32
+                            ..center_index[1] + self.world_size_in_chunks_radius[1] as i32 + 1
                         {
                             for x in center_index[0] - self.world_size_in_chunks_radius[0] as i32
-                                ..center_index[0] + self.world_size_in_chunks_radius[0] as i32
+                                ..center_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
                             {
                                 if !Self::within_distance_3d(
                                     previous_center_index,
@@ -201,26 +201,5 @@ impl World {
                 //}
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::world::World;
-
-    #[test]
-    fn within_distance_test_1d() {
-        assert!(World::within_distance_1d(0, 1, 2));
-        assert!(World::within_distance_1d(1, 0, 2));
-        assert!(World::within_distance_1d(-1, 0, 2));
-        assert!(World::within_distance_1d(-8, -9, 2));
-        assert!(World::within_distance_1d(-9, -8, 2));
-        assert!(World::within_distance_1d(9, 8, 2));
-        assert!(World::within_distance_1d(8, 9, 2));
-        assert!(World::within_distance_1d(9, 10, 2));
-    }
-    #[test]
-    fn within_distance_test_3d() {
-        assert!(World::within_distance_3d([3, 3, 3], [3, 3, 4], [1, 1, 1]));
     }
 }
