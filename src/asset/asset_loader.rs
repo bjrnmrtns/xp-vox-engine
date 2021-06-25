@@ -19,18 +19,18 @@ enum Result {
 }
 
 pub struct AssetLoader {
-    pub(crate) send_load: Sender<Command>,
+    pub send_load: Sender<Command>,
     receive_result: Receiver<Result>,
     pub join_handle: Option<JoinHandle<()>>,
 }
 
 impl AssetLoader {
-    pub fn new() -> Self {
+    pub fn new(chunk_size: usize) -> Self {
         let (send_load, receive_load): (Sender<Command>, Receiver<Command>) = mpsc::channel();
         let (send_result, receive_result): (Sender<Result>, Receiver<Result>) = mpsc::channel();
         let join_handle = thread::spawn(move || {
             let mut vox_models = Registry::new();
-            let mut chunker = Chunker::new();
+            let mut chunker = Chunker::new(chunk_size);
             loop {
                 match receive_load.recv().unwrap() {
                     Command::Quit => {

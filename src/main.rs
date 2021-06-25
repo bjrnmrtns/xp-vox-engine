@@ -53,12 +53,13 @@ fn main() -> Result<(), GameError> {
         futures::executor::block_on(renderer::LightPipeline::new(&renderer, &light_pipeline_bindgroup))
             .expect("Could not create pipeline light");
 
-    let mut asset_loader = AssetLoader::new();
+    let chunk_size = 32;
+    let mut asset_loader = AssetLoader::new(chunk_size);
     let mut physics = Physics::default();
     let mut meshes = Registry::new();
     let mut lights = Registry::new();
     let mut entities = Registry::new();
-    let mut world = World::new();
+    let mut world = World::new(chunk_size);
     let light_mesh_handle = meshes.add(Mesh::from(Cube::new(0.25)));
     lights.add(Light::Directional(DirectionalProperties::new([-1.0, -0.5, -1.0, 1.0])));
 
@@ -129,14 +130,12 @@ fn main() -> Result<(), GameError> {
                 input_all.clear_events();
                 let player_position = entities.get(&character).unwrap().transform.clone().translation;
                 let before_generate = std::time::Instant::now();
-                world.generate_around(
-                    [player_position.x, player_position.y, player_position.z],
-                    &mut meshes,
-                    &mut entities,
-                    &mut asset_loader,
-                );
-                let after_generate = std::time::Instant::now();
+                world.update_center([player_position[0], player_position[1], player_position[2]]);
+                world.request_new(&mut asset_loader);
+                world.delete_obsolete();
+                world.retrieve_new(&mut asset_loader, &mut meshes, &mut entities);
 
+                let after_generate = std::time::Instant::now();
                 let before_render = std::time::Instant::now();
                 let target = &renderer
                     .swap_chain
@@ -163,11 +162,11 @@ fn main() -> Result<(), GameError> {
                     target,
                 );
                 let after_render = std::time::Instant::now();
-                println!(
+                /*println!(
                     "render-time: {}, generate_time: {}",
                     (after_render - before_render).as_millis(),
                     (after_generate - before_generate).as_millis()
-                );
+                );*/
             }
             Event::MainEventsCleared => {
                 window.request_redraw();

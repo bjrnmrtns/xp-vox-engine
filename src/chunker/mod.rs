@@ -28,11 +28,11 @@ fn chunk_number_and_offset(start: i32, chunk_size: usize) -> (i32, usize) {
 }
 
 impl Chunker {
-    pub fn new() -> Self {
+    pub fn new(chunk_size: usize) -> Self {
         Self {
             entities: vec![],
             chunk_entity_map: HashMap::new(),
-            chunk_size: 32,
+            chunk_size,
         }
     }
 
