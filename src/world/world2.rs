@@ -101,13 +101,13 @@ impl World {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
             let previous_center_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
             for z in previous_center_index[2] - self.world_size_in_chunks_radius[2] as i32
-                ..previous_center_index[2] + self.world_size_in_chunks_radius[2] as i32
+                ..previous_center_index[2] + self.world_size_in_chunks_radius[2] as i32 + 1
             {
                 for y in previous_center_index[1] - self.world_size_in_chunks_radius[1] as i32
-                    ..previous_center_index[1] + self.world_size_in_chunks_radius[1] as i32
+                    ..previous_center_index[1] + self.world_size_in_chunks_radius[1] as i32 + 1
                 {
                     for x in previous_center_index[0] - self.world_size_in_chunks_radius[0] as i32
-                        ..previous_center_index[0] + self.world_size_in_chunks_radius[0] as i32
+                        ..previous_center_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
                     {
                         let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
                         if Self::outside_distance_3d(center_index, [x, y, z], self.world_size_in_chunks_radius) {
