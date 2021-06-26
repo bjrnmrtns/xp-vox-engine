@@ -11,6 +11,8 @@ pub struct Chunk {
     location: [i32; 3],
     mesh_handle: Option<Handle<Mesh>>,
     entity_handle: Option<Handle<Entity>>,
+    requested: bool,
+    loaded: bool,
 }
 
 impl Chunk {
@@ -19,6 +21,8 @@ impl Chunk {
             location: [x, y, z],
             mesh_handle: None,
             entity_handle: None,
+            requested: true,
+            loaded: false,
         }
     }
 }
@@ -136,7 +140,7 @@ impl World {
                             ..center_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
                         {
                             asset_loader.request(Command::Load(x, y, z));
-                            self.chunks.set(center_index, Some(Chunk::new(x, y, z)));
+                            self.chunks.set([x, y, z], Some(Chunk::new(x, y, z)));
                         }
                     }
                 }
@@ -186,21 +190,36 @@ impl World {
         entities: &mut Registry<Entity>,
     ) {
         if let Some(center) = self.center {
-            let center_index = Self::position_to_chunk_index_3d(center, 0.1);
+            let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
+            let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
             if let Some((mesh, transform, location)) = asset_loader.try_retrieve() {
-                /*if Self::within_distance_3d(
+                if Self::within_distance_3d(
                     center_index,
                     [location.0, location.1, location.2],
                     self.world_size_in_chunks_radius,
                 ) {
-                 */
-                let mesh_handle = meshes.add(mesh);
-                entities.add(Entity {
-                    mesh_handle,
-                    collision_shape: None,
-                    transform,
-                });
-                //}
+                    let location = [location.0, location.1, location.2];
+                    if let Some(chunk) = self.chunks.get(location) {
+                        if chunk.location == location && chunk.requested && !chunk.loaded {
+                            let mesh_handle = meshes.add(mesh);
+                            let entity_handle = entities.add(Entity {
+                                mesh_handle: mesh_handle.clone(),
+                                collision_shape: None,
+                                transform,
+                            });
+                            self.chunks.set(
+                                location,
+                                Some(Chunk {
+                                    location,
+                                    mesh_handle: Some(mesh_handle.clone()),
+                                    entity_handle: Some(entity_handle),
+                                    requested: true,
+                                    loaded: true,
+                                }),
+                            );
+                        }
+                    }
+                }
             }
         }
     }
