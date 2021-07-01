@@ -106,7 +106,8 @@ impl World {
         &mut self,
         meshes: &mut Registry<Mesh>,
         entities: &mut Registry<Entity>, /*vertex buffers*/
-    ) {
+    ) -> Vec<u64> {
+        let mut vb_ids_to_delete = Vec::new();
         if let (Some(previous_center), Some(center)) = (self.previous_center, self.center) {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
             let previous_center_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
@@ -124,6 +125,7 @@ impl World {
                             if let Some(chunk) = self.chunks.get([x, y, z]) {
                                 if chunk.location == [x, y, z] {
                                     if let Some(mesh_handle) = chunk.mesh_handle {
+                                        vb_ids_to_delete.push(mesh_handle.id);
                                         meshes.remove(mesh_handle);
                                     }
                                     if let Some(entity_handle) = chunk.entity_handle {
@@ -137,6 +139,7 @@ impl World {
                 }
             }
         }
+        vb_ids_to_delete
     }
 
     pub fn request_new(&mut self, asset_loader: &mut AssetLoader) {
