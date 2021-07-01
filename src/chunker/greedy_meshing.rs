@@ -51,7 +51,7 @@ impl Mask {
     }
 }
 
-pub fn greedy_mesh(vox: vox::Vox) -> Option<Mesh> {
+pub fn greedy_mesh(vox: &vox::Vox) -> Option<Mesh> {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
 

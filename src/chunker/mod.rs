@@ -120,7 +120,7 @@ impl Chunker {
                 }
             }
         }
-        let mesh = greedy_meshing::greedy_mesh(vox_to_gen);
+        let mesh = greedy_meshing::greedy_mesh(&vox_to_gen);
         (
             mesh,
             Transform::from_translation(Vec3::new(

@@ -118,7 +118,9 @@ fn main() -> Result<(), GameError> {
                 world.update_center([player_position[0], player_position[1], player_position[2]]);
                 world.request_new(&mut asset_loader);
                 let vb_ids_to_delete = world.delete_obsolete(&mut meshes, &mut entities);
-                vb_ids_to_delete.iter().map(|id| renderer.vertex_buffers.remove(&id));
+                for id in vb_ids_to_delete {
+                    renderer.vertex_buffers.remove(&id);
+                }
                 world.retrieve_new(&mut asset_loader, &mut meshes, &mut entities);
 
                 let after_generate = std::time::Instant::now();
