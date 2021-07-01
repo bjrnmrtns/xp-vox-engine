@@ -45,8 +45,8 @@ impl World {
             previous_center: None,
             voxel_size: 0.1,
             chunk_size_in_voxels: chunk_size as u32,
-            walking_window: [10.0, 10.0, 10.0],
-            world_size_in_chunks_radius: [2, 2, 2],
+            walking_window: [6.0, 6.0, 6.0],
+            world_size_in_chunks_radius: [5, 3, 5],
         }
     }
 

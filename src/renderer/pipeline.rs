@@ -68,7 +68,7 @@ impl Pipeline {
         });
         Ok(Self { render_pipeline })
     }
-
+g
     pub fn render(
         &self,
         entities: &Registry<Entity>,
