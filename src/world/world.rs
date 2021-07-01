@@ -46,7 +46,7 @@ impl World {
             voxel_size: 0.1,
             chunk_size_in_voxels: chunk_size as u32,
             walking_window: [10.0, 10.0, 10.0],
-            world_size_in_chunks_radius: [4, 4, 4],
+            world_size_in_chunks_radius: [2, 2, 2],
         }
     }
 
@@ -102,7 +102,11 @@ impl World {
         !Self::within_distance_3d(first, second, distance)
     }
 
-    pub fn delete_obsolete(&mut self /*vertex buffers / meshes / entities to delete*/) {
+    pub fn delete_obsolete(
+        &mut self,
+        meshes: &mut Registry<Mesh>,
+        entities: &mut Registry<Entity>, /*vertex buffers*/
+    ) {
         if let (Some(previous_center), Some(center)) = (self.previous_center, self.center) {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
             let previous_center_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
@@ -117,7 +121,17 @@ impl World {
                     {
                         let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
                         if Self::outside_distance_3d(center_index, [x, y, z], self.world_size_in_chunks_radius) {
-                            self.chunks.set(previous_center_index, None);
+                            if let Some(chunk) = self.chunks.get([x, y, z]) {
+                                if chunk.location == [x, y, z] {
+                                    if let Some(mesh_handle) = chunk.mesh_handle {
+                                        meshes.remove(mesh_handle);
+                                    }
+                                    if let Some(entity_handle) = chunk.entity_handle {
+                                        entities.remove(entity_handle);
+                                    }
+                                    self.chunks.set([x, y, z], None);
+                                }
+                            }
                         }
                     }
                 }
