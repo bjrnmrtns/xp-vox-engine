@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Bjorn Martens <bjorn@expeditious.nl>"]
 edition = "2018"
 
+[dev-dependencies]
+criterion = "0.3"
+
 [dependencies]
 noise = "0.7"
 winit = "0.24"
@@ -18,3 +21,7 @@ image = "0.23"
 rapier2d = "0.6"
 rapier3d = "0.7"
 dot_vox = "4.1.0"
+
+[[bench]]
+name = "benchmark_greedy_meshing"
+harness = false

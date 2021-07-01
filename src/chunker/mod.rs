@@ -7,7 +7,7 @@ use crate::{
 use glam::Vec3;
 use std::collections::HashMap;
 
-mod greedy_meshing;
+pub mod greedy_meshing;
 
 pub struct Chunker {
     entities: Vec<(Handle<Vox>, [usize; 3], [i32; 3])>,
