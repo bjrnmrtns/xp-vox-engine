@@ -4,33 +4,33 @@ use crate::{
     mesh::MeshData,
     registry::{Handle, Registry},
     renderer::{Mesh, Renderer},
+    transform::Transform,
     world::sliding_vec3d::Vec3dSliding,
 };
+use glam::Mat4;
 use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct Chunk {
     location: [i32; 3],
-    mesh_handle: Option<Handle<MeshData>>,
-    entity_handle: Option<Handle<Entity>>,
+    transform: Transform,
     requested: bool,
-    loaded: bool,
 }
 
 impl Chunk {
     pub fn new(x: i32, y: i32, z: i32) -> Self {
         Self {
             location: [x, y, z],
-            mesh_handle: None,
-            entity_handle: None,
+            transform: Transform::identity(),
             requested: true,
-            loaded: false,
         }
     }
 }
 
 pub struct World {
     chunks: Vec3dSliding<Option<Chunk>>,
+    meshes: Vec3dSliding<Option<Handle<Mesh>>>,
+    mesh_storage: Registry<Mesh>,
     center: Option<[f32; 3]>,
     previous_center: Option<[f32; 3]>,
     voxel_size: f32,
@@ -43,6 +43,8 @@ impl World {
     pub fn new(chunk_size: usize) -> Self {
         Self {
             chunks: Vec3dSliding::new([100, 100, 100]),
+            meshes: Vec3dSliding::new([100, 100, 100]),
+            mesh_storage: Registry::new(),
             center: None,
             previous_center: None,
             voxel_size: 0.1,
@@ -104,12 +106,7 @@ impl World {
         !Self::within_distance_3d(first, second, distance)
     }
 
-    fn delete_obsolete(
-        &mut self,
-        meshes: &mut Registry<MeshData>,
-        entities: &mut Registry<Entity>, /*vertex buffers*/
-    ) -> Vec<u64> {
-        let mut vb_ids_to_delete = Vec::new();
+    fn delete_obsolete(&mut self) {
         if let (Some(previous_center), Some(center)) = (self.previous_center, self.center) {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
             let previous_center_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
@@ -126,14 +123,11 @@ impl World {
                         if Self::outside_distance_3d(center_index, [x, y, z], self.world_size_in_chunks_radius) {
                             if let Some(chunk) = self.chunks.get([x, y, z]) {
                                 if chunk.location == [x, y, z] {
-                                    if let Some(mesh_handle) = chunk.mesh_handle {
-                                        vb_ids_to_delete.push(mesh_handle.id);
-                                        meshes.remove(mesh_handle);
-                                    }
-                                    if let Some(entity_handle) = chunk.entity_handle {
-                                        entities.remove(entity_handle);
-                                    }
                                     self.chunks.set([x, y, z], None);
+                                    if let Some(mesh_handle) = self.meshes.get([x, y, z]) {
+                                        self.mesh_storage.remove(mesh_handle);
+                                        self.meshes.set([x, y, z], None);
+                                    }
                                 }
                             }
                         }
@@ -141,7 +135,6 @@ impl World {
                 }
             }
         }
-        vb_ids_to_delete
     }
 
     fn request_new(&mut self, asset_loader: &mut AssetLoader) {
@@ -202,38 +195,22 @@ impl World {
         }
     }
 
-    fn retrieve_new(
-        &mut self,
-        asset_loader: &mut AssetLoader,
-        meshes: &mut Registry<MeshData>,
-        entities: &mut Registry<Entity>,
-    ) {
+    fn retrieve_new(&mut self, asset_loader: &mut AssetLoader, renderer: &mut Renderer) {
         if let Some(center) = self.center {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
             let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
-            if let Some((mesh, transform, location)) = asset_loader.try_retrieve() {
-                if Self::within_distance_3d(
-                    center_index,
-                    [location.0, location.1, location.2],
-                    self.world_size_in_chunks_radius,
-                ) {
-                    let location = [location.0, location.1, location.2];
+            if let Some((mesh_data, transform, location)) = asset_loader.try_retrieve() {
+                if Self::within_distance_3d(center_index, location, self.world_size_in_chunks_radius) {
                     if let Some(chunk) = self.chunks.get(location) {
-                        if chunk.location == location && chunk.requested && !chunk.loaded {
-                            let mesh_handle = meshes.add(mesh);
-                            let entity_handle = entities.add(Entity {
-                                mesh_handle: mesh_handle.clone(),
-                                collision_shape: None,
-                                transform,
-                            });
+                        if chunk.location == location && chunk.requested {
+                            let mesh_handle = self.mesh_storage.add(Mesh::from_mesh_data(renderer, mesh_data));
+                            self.meshes.set(location, Some(mesh_handle));
                             self.chunks.set(
                                 location,
                                 Some(Chunk {
                                     location,
-                                    mesh_handle: Some(mesh_handle.clone()),
-                                    entity_handle: Some(entity_handle),
+                                    transform,
                                     requested: true,
-                                    loaded: true,
                                 }),
                             );
                         }
@@ -243,20 +220,10 @@ impl World {
         }
     }
 
-    pub fn update(
-        &mut self,
-        position: [f32; 3],
-        asset_loader: &mut AssetLoader,
-        meshes: &mut Registry<MeshData>,
-        entities: &mut Registry<Entity>,
-        renderer: &mut Renderer,
-    ) {
+    pub fn update(&mut self, position: [f32; 3], asset_loader: &mut AssetLoader, renderer: &mut Renderer) {
         self.update_center(position);
         self.request_new(asset_loader);
-        let vb_ids_to_delete = self.delete_obsolete(meshes, entities);
-        for id in vb_ids_to_delete {
-            renderer.vertex_buffers.remove(&id);
-        }
-        self.retrieve_new(asset_loader, meshes, entities);
+        self.delete_obsolete();
+        self.retrieve_new(asset_loader, renderer);
     }
 }

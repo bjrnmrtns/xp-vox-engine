@@ -3,7 +3,7 @@ use crate::{
     registry::{Handle, Registry},
     renderer::{
         depth_texture::DepthTexture, error::RendererError, light_bindgroup::Instance, Camera, Light, LightBindGroup,
-        Renderer,
+        Mesh, Renderer,
     },
 };
 use glam::{Mat4, Vec3};
@@ -71,10 +71,11 @@ impl LightPipeline {
 
     pub fn render(
         &self,
-        light_handle: &Handle<MeshData>,
+        light_handle: &Handle<Mesh>,
         lights: &Registry<Light>,
         bindgroup: &LightBindGroup,
         camera: &dyn Camera,
+        meshes: &Registry<Mesh>,
         renderer: &mut Renderer,
         target: &wgpu::TextureView,
     ) {
@@ -127,7 +128,7 @@ impl LightPipeline {
                     stencil_ops: None,
                 }),
             });
-            let vb = renderer.vertex_buffers.get(&light_handle.id).unwrap();
+            let vb = meshes.get(light_handle).unwrap();
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_vertex_buffer(0, vb.vertex_buffer.slice(..));
             render_pass.set_index_buffer(vb.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

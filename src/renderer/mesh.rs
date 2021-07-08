@@ -13,21 +13,21 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn from_mesh(renderer: &Renderer, mesh: &MeshData) -> Self {
+    pub fn from_mesh_data(renderer: &Renderer, mesh_data: MeshData) -> Self {
         let vertex_buffer = renderer.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(mesh.vertices.as_slice()),
+            contents: bytemuck::cast_slice(mesh_data.vertices.as_slice()),
             usage: wgpu::BufferUsage::VERTEX,
         });
         let index_buffer = renderer.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(mesh.indices.as_slice()),
+            contents: bytemuck::cast_slice(mesh_data.indices.as_slice()),
             usage: wgpu::BufferUsage::INDEX,
         });
         Self {
             vertex_buffer,
             index_buffer,
-            len: mesh.indices.len() as u32,
+            len: mesh_data.indices.len() as u32,
         }
     }
 }

@@ -71,14 +71,7 @@ pub fn load_gltf(bytes: &[u8], mut named_mesh: impl FnMut(String, MeshData)) -> 
                     }
                 }
             }
-            named_mesh(
-                node_name.to_string(),
-                MeshData {
-                    vertices,
-                    indices,
-                    just_loaded: true,
-                },
-            );
+            named_mesh(node_name.to_string(), MeshData { vertices, indices });
         }
     }
     Ok(())

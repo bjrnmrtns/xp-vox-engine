@@ -174,11 +174,7 @@ pub fn greedy_mesh(vox: &vox::Vox) -> Option<MeshData> {
         }
     }
     if vox.touched {
-        Some(MeshData {
-            vertices,
-            indices,
-            just_loaded: true,
-        })
+        Some(MeshData { vertices, indices })
     } else {
         None
     }

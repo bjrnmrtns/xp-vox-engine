@@ -15,7 +15,7 @@ pub enum Command {
 }
 
 enum Result {
-    Chunk(MeshData, Transform, (i32, i32, i32)),
+    Chunk(MeshData, Transform, [i32; 3]),
 }
 
 pub struct AssetLoader {
@@ -39,7 +39,7 @@ impl AssetLoader {
                     Command::Load(x, y, z) => {
                         let (mesh, transform) = chunker.generate_chunk(&vox_models, (x, y, z));
                         if let Some(mesh) = mesh {
-                            send_result.send(Result::Chunk(mesh, transform, (x, y, z))).unwrap();
+                            send_result.send(Result::Chunk(mesh, transform, [x, y, z])).unwrap();
                         }
                     }
                     Command::LoadVox(path) => {
@@ -81,10 +81,10 @@ impl AssetLoader {
         self.send_load.send(command).unwrap();
     }
 
-    pub fn try_retrieve(&mut self) -> Option<(MeshData, Transform, (i32, i32, i32))> {
+    pub fn try_retrieve(&mut self) -> Option<(MeshData, Transform, [i32; 3])> {
         if let Ok(result) = self.receive_result.try_recv() {
             match result {
-                Result::Chunk(mesh, transform, (x, y, z)) => Some((mesh, transform, (x, y, z))),
+                Result::Chunk(mesh, transform, [x, y, z]) => Some((mesh, transform, [x, y, z])),
             }
         } else {
             None

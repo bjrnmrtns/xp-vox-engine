@@ -9,7 +9,6 @@ pub struct Renderer {
     pub swap_chain_descriptor: wgpu::SwapChainDescriptor,
     pub swap_chain: wgpu::SwapChain,
     pub depth_texture: DepthTexture,
-    pub vertex_buffers: HashMap<u64, Mesh>,
 }
 
 impl Renderer {
@@ -56,7 +55,6 @@ impl Renderer {
             swap_chain_descriptor,
             swap_chain,
             depth_texture,
-            vertex_buffers: HashMap::new(),
         })
     }
 

@@ -14,7 +14,7 @@ use xp_vox_engine::{
     physics::{Body, BodyStatus, CollisionShape, Cuboid, Physics, Sphere},
     registry::Registry,
     renderer,
-    renderer::{BindGroup, DirectionalProperties, Light, LightBindGroup, PointProperties, SpotProperties},
+    renderer::{BindGroup, DirectionalProperties, Light, LightBindGroup, Mesh, PointProperties, SpotProperties},
     transform::Transform,
     winit_impl,
     world::World,
@@ -41,11 +41,11 @@ fn main() -> Result<(), GameError> {
     let chunk_size = 32;
     let mut asset_loader = AssetLoader::new(chunk_size);
     let mut physics = Physics::default();
-    let mut meshes_data = Registry::new();
+    let mut meshes = Registry::new();
     let mut lights = Registry::new();
     let mut entities = Registry::new();
     let mut world = World::new(chunk_size);
-    let light_mesh_handle = meshes_data.add(MeshData::from(Cube::new(0.25)));
+    let light_mesh_handle = meshes.add(Mesh::from_mesh_data(&renderer, MeshData::from(Cube::new(0.25))));
     lights.add(Light::Directional(DirectionalProperties::new([-1.0, -0.5, -1.0, 1.0])));
 
     lights.add(Light::Spot(SpotProperties::new(
@@ -62,7 +62,7 @@ fn main() -> Result<(), GameError> {
     asset_loader.request(Command::LoadVox("res/vox-models/#treehouse/#treehouse.vox"));
 
     let cube = entities.add(Entity {
-        mesh_handle: meshes_data.add(MeshData::from(Cube::new(1.0))),
+        mesh_handle: meshes.add(Mesh::from_mesh_data(&renderer, MeshData::from(Cube::new(1.0)))),
         collision_shape: Some(CollisionShape {
             body_status: BodyStatus::Static,
             body: Body::Cuboid(Cuboid {
@@ -77,7 +77,7 @@ fn main() -> Result<(), GameError> {
     physics.register(cube, &entities);
 
     let character = entities.add(Entity {
-        mesh_handle: meshes_data.add(MeshData::from(IcoSphere::new(0.5))),
+        mesh_handle: meshes.add(Mesh::from_mesh_data(&renderer, MeshData::from(IcoSphere::new(0.5)))),
         collision_shape: Some(CollisionShape {
             body_status: BodyStatus::Dynamic,
             body: Body::Sphere(Sphere { radius: 0.5 }),
@@ -118,8 +118,6 @@ fn main() -> Result<(), GameError> {
                 world.update(
                     [player_position[0], player_position[1], player_position[2]],
                     &mut asset_loader,
-                    &mut meshes_data,
-                    &mut entities,
                     &mut renderer,
                 );
 
@@ -133,8 +131,9 @@ fn main() -> Result<(), GameError> {
                     .view;
 
                 pipeline.render(
+                    &world,
                     &entities,
-                    &mut meshes_data,
+                    &mut meshes,
                     &lights,
                     &pipeline_bindgroup,
                     &follow_camera,
@@ -146,6 +145,7 @@ fn main() -> Result<(), GameError> {
                     &lights,
                     &light_pipeline_bindgroup,
                     &follow_camera,
+                    &mut meshes,
                     &mut renderer,
                     target,
                 );

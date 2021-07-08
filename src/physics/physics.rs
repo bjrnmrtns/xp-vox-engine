@@ -92,30 +92,6 @@ impl Physics {
         self.character = Some(entity_handle);
     }
 
-    pub fn register_heigtmap(
-        &mut self,
-        entity_handle: Handle<Entity>,
-        entities: &Registry<Entity>,
-        meshes: &Registry<MeshData>,
-    ) {
-        let entity = entities.get(&entity_handle).unwrap();
-        let mesh = meshes.get(&entity.mesh_handle).unwrap();
-        let mut vertices = Vec::new();
-        let mut indices = Vec::new();
-        let mut index: u32 = 0;
-        for triangle in mesh.vertices.chunks(3) {
-            vertices.push(triangle[0].position.into());
-            vertices.push(triangle[1].position.into());
-            vertices.push(triangle[2].position.into());
-            indices.push([index, index + 1, index + 2]);
-            index += 3;
-        }
-        let rigid_body = RigidBodyBuilder::new_static().build();
-        let handle = self.bodies.insert(rigid_body);
-        let collider = ColliderBuilder::trimesh(vertices, indices).build();
-        self.colliders.insert(collider, handle, &mut self.bodies);
-    }
-
     pub fn register(&mut self, entity_handle: Handle<Entity>, entities: &Registry<Entity>) {
         if let Some(entity) = entities.get(&entity_handle) {
             if let Some(collision_shape) = &entity.collision_shape {

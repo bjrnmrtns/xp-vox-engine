@@ -9,7 +9,6 @@ use std::collections::HashMap;
 pub struct MeshData {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
-    pub just_loaded: bool,
 }
 
 pub struct Plane {
@@ -121,11 +120,7 @@ impl From<Plane> for MeshData {
                 index_count += 6;
             }
         }
-        Self {
-            vertices,
-            indices,
-            just_loaded: true,
-        }
+        Self { vertices, indices }
     }
 }
 
@@ -200,11 +195,7 @@ impl From<Cube> for MeshData {
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
             29, 30, 31, 32, 33, 34, 35,
         ]);
-        Self {
-            vertices,
-            indices,
-            just_loaded: true,
-        }
+        Self { vertices, indices }
     }
 }
 
@@ -327,11 +318,7 @@ impl From<IcoSphere> for MeshData {
             ));
             indices.extend((0..3).into_iter().map(|i| count + i));
         }
-        Self {
-            vertices,
-            indices,
-            just_loaded: true,
-        }
+        Self { vertices, indices }
     }
 }
 

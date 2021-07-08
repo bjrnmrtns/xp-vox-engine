@@ -6,6 +6,7 @@ use crate::{
         bindgroup::Instance, depth_texture::DepthTexture, error::RendererError, mesh::Mesh, BindGroup, Camera, Light,
         Renderer,
     },
+    world::World,
 };
 use std::borrow::Cow;
 
@@ -71,8 +72,9 @@ impl Pipeline {
 
     pub fn render(
         &self,
+        world: &World,
         entities: &Registry<Entity>,
-        meshes: &mut Registry<MeshData>,
+        meshes: &mut Registry<Mesh>,
         lights: &Registry<Light>,
         bindgroup: &BindGroup,
         camera: &dyn Camera,
@@ -83,11 +85,7 @@ impl Pipeline {
         let mut instance_map = Vec::new();
         let mut start_range = 0;
         let mut transforms = Vec::new();
-        for (id, mesh) in &mut meshes.registry {
-            if mesh.just_loaded {
-                renderer.vertex_buffers.insert(*id, Mesh::from_mesh(&renderer, mesh));
-                mesh.just_loaded = false;
-            }
+        for (id, _) in &mut meshes.registry {
             transforms.extend_from_slice(
                 entities
                     .registry
@@ -104,9 +102,10 @@ impl Pipeline {
                     .collect::<Vec<_>>()
                     .as_slice(),
             );
-            instance_map.push((Handle::<MeshData>::new(*id), start_range..transforms.len() as u32));
+            instance_map.push((Handle::<Mesh>::new(*id), start_range..transforms.len() as u32));
             start_range = transforms.len() as u32;
         }
+        fix instances of world so transforms with meshes get rendered
         bindgroup.update_instances(&renderer, transforms.as_slice());
         let mut encoder = renderer
             .device
@@ -139,7 +138,7 @@ impl Pipeline {
 
             for (mesh_handle, instance_range) in instance_map {
                 if !instance_range.is_empty() {
-                    let mesh = renderer.vertex_buffers.get(&mesh_handle.id).unwrap();
+                    let mesh = meshes.get(&mesh_handle).unwrap();
                     render_pass.set_pipeline(&self.render_pipeline);
                     render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                     render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
