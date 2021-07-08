@@ -1,7 +1,7 @@
 use crate::{
     controllers::CharacterController,
     entity::Entity,
-    mesh::Mesh,
+    mesh::MeshData,
     physics::collisionshape::{Body, BodyStatus},
     registry::{Handle, Registry},
 };
@@ -96,7 +96,7 @@ impl Physics {
         &mut self,
         entity_handle: Handle<Entity>,
         entities: &Registry<Entity>,
-        meshes: &Registry<Mesh>,
+        meshes: &Registry<MeshData>,
     ) {
         let entity = entities.get(&entity_handle).unwrap();
         let mesh = meshes.get(&entity.mesh_handle).unwrap();

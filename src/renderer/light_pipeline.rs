@@ -1,5 +1,5 @@
 use crate::{
-    mesh::{Mesh, Vertex},
+    mesh::{MeshData, Vertex},
     registry::{Handle, Registry},
     renderer::{
         depth_texture::DepthTexture, error::RendererError, light_bindgroup::Instance, Camera, Light, LightBindGroup,
@@ -71,7 +71,7 @@ impl LightPipeline {
 
     pub fn render(
         &self,
-        light_handle: &Handle<Mesh>,
+        light_handle: &Handle<MeshData>,
         lights: &Registry<Light>,
         bindgroup: &LightBindGroup,
         camera: &dyn Camera,

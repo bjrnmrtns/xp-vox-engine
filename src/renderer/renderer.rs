@@ -1,4 +1,4 @@
-use crate::renderer::{depth_texture::DepthTexture, error::RendererError, vertex_buffer::VertexBuffer};
+use crate::renderer::{depth_texture::DepthTexture, error::RendererError, mesh::Mesh};
 use std::collections::HashMap;
 use winit::window::Window;
 
@@ -9,7 +9,7 @@ pub struct Renderer {
     pub swap_chain_descriptor: wgpu::SwapChainDescriptor,
     pub swap_chain: wgpu::SwapChain,
     pub depth_texture: DepthTexture,
-    pub vertex_buffers: HashMap<u64, VertexBuffer>,
+    pub vertex_buffers: HashMap<u64, Mesh>,
 }
 
 impl Renderer {

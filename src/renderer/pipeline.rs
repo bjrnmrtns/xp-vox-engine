@@ -1,10 +1,10 @@
 use crate::{
     entity::Entity,
-    mesh::{Mesh, Vertex},
+    mesh::{MeshData, Vertex},
     registry::{Handle, Registry},
     renderer::{
-        bindgroup::Instance, depth_texture::DepthTexture, error::RendererError, vertex_buffer::VertexBuffer, BindGroup,
-        Camera, Light, Renderer,
+        bindgroup::Instance, depth_texture::DepthTexture, error::RendererError, mesh::Mesh, BindGroup, Camera, Light,
+        Renderer,
     },
 };
 use std::borrow::Cow;
@@ -68,11 +68,11 @@ impl Pipeline {
         });
         Ok(Self { render_pipeline })
     }
-g
+
     pub fn render(
         &self,
         entities: &Registry<Entity>,
-        meshes: &mut Registry<Mesh>,
+        meshes: &mut Registry<MeshData>,
         lights: &Registry<Light>,
         bindgroup: &BindGroup,
         camera: &dyn Camera,
@@ -85,9 +85,7 @@ g
         let mut transforms = Vec::new();
         for (id, mesh) in &mut meshes.registry {
             if mesh.just_loaded {
-                renderer
-                    .vertex_buffers
-                    .insert(*id, VertexBuffer::from_mesh(&renderer, mesh));
+                renderer.vertex_buffers.insert(*id, Mesh::from_mesh(&renderer, mesh));
                 mesh.just_loaded = false;
             }
             transforms.extend_from_slice(
@@ -106,7 +104,7 @@ g
                     .collect::<Vec<_>>()
                     .as_slice(),
             );
-            instance_map.push((Handle::<Mesh>::new(*id), start_range..transforms.len() as u32));
+            instance_map.push((Handle::<MeshData>::new(*id), start_range..transforms.len() as u32));
             start_range = transforms.len() as u32;
         }
         bindgroup.update_instances(&renderer, transforms.as_slice());

@@ -1,4 +1,4 @@
-use crate::mesh::{triangle_normal, Mesh, Vertex};
+use crate::mesh::{triangle_normal, MeshData, Vertex};
 use gltf::mesh::Mode;
 
 #[derive(Debug)]
@@ -22,7 +22,7 @@ impl From<base64::DecodeError> for MeshLoadError {
     }
 }
 
-pub fn load_gltf(bytes: &[u8], mut named_mesh: impl FnMut(String, Mesh)) -> Result<(), MeshLoadError> {
+pub fn load_gltf(bytes: &[u8], mut named_mesh: impl FnMut(String, MeshData)) -> Result<(), MeshLoadError> {
     let gltf = gltf::Gltf::from_slice(bytes)?;
     let buffer_data = load_buffers(&gltf)?;
     for node in gltf.nodes() {
@@ -73,7 +73,7 @@ pub fn load_gltf(bytes: &[u8], mut named_mesh: impl FnMut(String, Mesh)) -> Resu
             }
             named_mesh(
                 node_name.to_string(),
-                Mesh {
+                MeshData {
                     vertices,
                     indices,
                     just_loaded: true,

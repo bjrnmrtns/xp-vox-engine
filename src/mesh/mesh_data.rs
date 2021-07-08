@@ -6,7 +6,7 @@ use glam::Vec3;
 use std::collections::HashMap;
 
 #[derive(Clone)]
-pub struct Mesh {
+pub struct MeshData {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
     pub just_loaded: bool,
@@ -42,7 +42,7 @@ pub fn triangle_normal(p0: [f32; 3], p1: [f32; 3], p2: [f32; 3]) -> [f32; 3] {
     edge1.cross(edge0).into()
 }
 
-impl From<Plane> for Mesh {
+impl From<Plane> for MeshData {
     fn from(plane: Plane) -> Self {
         let increments = 2i32.pow(plane.subdivisions);
         let increment = plane.size / increments as f32;
@@ -139,7 +139,7 @@ impl Cube {
     }
 }
 
-impl From<Cube> for Mesh {
+impl From<Cube> for MeshData {
     fn from(cube: Cube) -> Self {
         let max = cube.size / 2.0;
         let min = -max;
@@ -258,7 +258,7 @@ fn scale_vertex(v: [f32; 3], scale: f32) -> [f32; 3] {
     [v[0] * scale, v[1] * scale, v[2] * scale]
 }
 
-impl From<IcoSphere> for Mesh {
+impl From<IcoSphere> for MeshData {
     fn from(sphere: IcoSphere) -> Self {
         const X: f32 = 0.525731112119133606;
         const Z: f32 = 0.850650808352039932;

@@ -10,7 +10,7 @@ use xp_vox_engine::{
     controllers::{CameraController, CharacterController},
     entity::Entity,
     input::{keyboard_state_from_events, InputAll},
-    mesh::{Cube, IcoSphere, Mesh},
+    mesh::{Cube, IcoSphere, MeshData},
     physics::{Body, BodyStatus, CollisionShape, Cuboid, Physics, Sphere},
     registry::Registry,
     renderer,
@@ -41,11 +41,11 @@ fn main() -> Result<(), GameError> {
     let chunk_size = 32;
     let mut asset_loader = AssetLoader::new(chunk_size);
     let mut physics = Physics::default();
-    let mut meshes = Registry::new();
+    let mut meshes_data = Registry::new();
     let mut lights = Registry::new();
     let mut entities = Registry::new();
     let mut world = World::new(chunk_size);
-    let light_mesh_handle = meshes.add(Mesh::from(Cube::new(0.25)));
+    let light_mesh_handle = meshes_data.add(MeshData::from(Cube::new(0.25)));
     lights.add(Light::Directional(DirectionalProperties::new([-1.0, -0.5, -1.0, 1.0])));
 
     lights.add(Light::Spot(SpotProperties::new(
@@ -62,7 +62,7 @@ fn main() -> Result<(), GameError> {
     asset_loader.request(Command::LoadVox("res/vox-models/#treehouse/#treehouse.vox"));
 
     let cube = entities.add(Entity {
-        mesh_handle: meshes.add(Mesh::from(Cube::new(1.0))),
+        mesh_handle: meshes_data.add(MeshData::from(Cube::new(1.0))),
         collision_shape: Some(CollisionShape {
             body_status: BodyStatus::Static,
             body: Body::Cuboid(Cuboid {
@@ -77,7 +77,7 @@ fn main() -> Result<(), GameError> {
     physics.register(cube, &entities);
 
     let character = entities.add(Entity {
-        mesh_handle: meshes.add(Mesh::from(IcoSphere::new(0.5))),
+        mesh_handle: meshes_data.add(MeshData::from(IcoSphere::new(0.5))),
         collision_shape: Some(CollisionShape {
             body_status: BodyStatus::Dynamic,
             body: Body::Sphere(Sphere { radius: 0.5 }),
@@ -115,13 +115,13 @@ fn main() -> Result<(), GameError> {
                 input_all.clear_events();
                 let player_position = entities.get(&character).unwrap().transform.clone().translation;
                 let before_generate = std::time::Instant::now();
-                world.update_center([player_position[0], player_position[1], player_position[2]]);
-                world.request_new(&mut asset_loader);
-                let vb_ids_to_delete = world.delete_obsolete(&mut meshes, &mut entities);
-                for id in vb_ids_to_delete {
-                    renderer.vertex_buffers.remove(&id);
-                }
-                world.retrieve_new(&mut asset_loader, &mut meshes, &mut entities);
+                world.update(
+                    [player_position[0], player_position[1], player_position[2]],
+                    &mut asset_loader,
+                    &mut meshes_data,
+                    &mut entities,
+                    &mut renderer,
+                );
 
                 let after_generate = std::time::Instant::now();
                 let before_render = std::time::Instant::now();
@@ -134,7 +134,7 @@ fn main() -> Result<(), GameError> {
 
                 pipeline.render(
                     &entities,
-                    &mut meshes,
+                    &mut meshes_data,
                     &lights,
                     &pipeline_bindgroup,
                     &follow_camera,

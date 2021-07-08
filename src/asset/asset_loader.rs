@@ -1,4 +1,4 @@
-use crate::{chunker::Chunker, mesh::Mesh, registry::Registry, transform::Transform, vox};
+use crate::{chunker::Chunker, mesh::MeshData, registry::Registry, transform::Transform, vox};
 use std::{
     sync::{
         mpsc,
@@ -15,7 +15,7 @@ pub enum Command {
 }
 
 enum Result {
-    Chunk(Mesh, Transform, (i32, i32, i32)),
+    Chunk(MeshData, Transform, (i32, i32, i32)),
 }
 
 pub struct AssetLoader {
@@ -81,7 +81,7 @@ impl AssetLoader {
         self.send_load.send(command).unwrap();
     }
 
-    pub fn try_retrieve(&mut self) -> Option<(Mesh, Transform, (i32, i32, i32))> {
+    pub fn try_retrieve(&mut self) -> Option<(MeshData, Transform, (i32, i32, i32))> {
         if let Ok(result) = self.receive_result.try_recv() {
             match result {
                 Result::Chunk(mesh, transform, (x, y, z)) => Some((mesh, transform, (x, y, z))),

@@ -1,15 +1,17 @@
 use crate::{
     asset::{AssetLoader, Command},
     entity::Entity,
-    mesh::Mesh,
+    mesh::MeshData,
     registry::{Handle, Registry},
+    renderer::{Mesh, Renderer},
     world::sliding_vec3d::Vec3dSliding,
 };
+use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct Chunk {
     location: [i32; 3],
-    mesh_handle: Option<Handle<Mesh>>,
+    mesh_handle: Option<Handle<MeshData>>,
     entity_handle: Option<Handle<Entity>>,
     requested: bool,
     loaded: bool,
@@ -73,7 +75,7 @@ impl World {
         }
     }
 
-    pub fn update_center(&mut self, position: [f32; 3]) {
+    fn update_center(&mut self, position: [f32; 3]) {
         if let Some(previous_center) = self.previous_center {
             let new_previous_center = self.center;
             self.center = Some([
@@ -102,9 +104,9 @@ impl World {
         !Self::within_distance_3d(first, second, distance)
     }
 
-    pub fn delete_obsolete(
+    fn delete_obsolete(
         &mut self,
-        meshes: &mut Registry<Mesh>,
+        meshes: &mut Registry<MeshData>,
         entities: &mut Registry<Entity>, /*vertex buffers*/
     ) -> Vec<u64> {
         let mut vb_ids_to_delete = Vec::new();
@@ -142,7 +144,7 @@ impl World {
         vb_ids_to_delete
     }
 
-    pub fn request_new(&mut self, asset_loader: &mut AssetLoader) {
+    fn request_new(&mut self, asset_loader: &mut AssetLoader) {
         match (self.previous_center, self.center) {
             (None, Some(center)) => {
                 let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
@@ -200,10 +202,10 @@ impl World {
         }
     }
 
-    pub fn retrieve_new(
+    fn retrieve_new(
         &mut self,
         asset_loader: &mut AssetLoader,
-        meshes: &mut Registry<Mesh>,
+        meshes: &mut Registry<MeshData>,
         entities: &mut Registry<Entity>,
     ) {
         if let Some(center) = self.center {
@@ -239,5 +241,22 @@ impl World {
                 }
             }
         }
+    }
+
+    pub fn update(
+        &mut self,
+        position: [f32; 3],
+        asset_loader: &mut AssetLoader,
+        meshes: &mut Registry<MeshData>,
+        entities: &mut Registry<Entity>,
+        renderer: &mut Renderer,
+    ) {
+        self.update_center(position);
+        self.request_new(asset_loader);
+        let vb_ids_to_delete = self.delete_obsolete(meshes, entities);
+        for id in vb_ids_to_delete {
+            renderer.vertex_buffers.remove(&id);
+        }
+        self.retrieve_new(asset_loader, meshes, entities);
     }
 }

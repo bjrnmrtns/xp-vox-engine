@@ -1,5 +1,5 @@
 use crate::{
-    mesh::{Mesh, Vertex},
+    mesh::{MeshData, Vertex},
     vox,
 };
 
@@ -51,7 +51,7 @@ impl Mask {
     }
 }
 
-pub fn greedy_mesh(vox: &vox::Vox) -> Option<Mesh> {
+pub fn greedy_mesh(vox: &vox::Vox) -> Option<MeshData> {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
 
@@ -174,7 +174,7 @@ pub fn greedy_mesh(vox: &vox::Vox) -> Option<Mesh> {
         }
     }
     if vox.touched {
-        Some(Mesh {
+        Some(MeshData {
             vertices,
             indices,
             just_loaded: true,

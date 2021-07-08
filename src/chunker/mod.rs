@@ -1,5 +1,5 @@
 use crate::{
-    mesh::Mesh,
+    mesh::MeshData,
     registry::{Handle, Registry},
     transform::Transform,
     vox::Vox,
@@ -84,7 +84,11 @@ impl Chunker {
         }
     }
 
-    pub fn generate_chunk(&mut self, registry: &Registry<Vox>, chunk: (i32, i32, i32)) -> (Option<Mesh>, Transform) {
+    pub fn generate_chunk(
+        &mut self,
+        registry: &Registry<Vox>,
+        chunk: (i32, i32, i32),
+    ) -> (Option<MeshData>, Transform) {
         let mut vox_to_gen = Vox::new(self.chunk_size, self.chunk_size, self.chunk_size);
         for z in 0..self.chunk_size {
             for y in 0..self.chunk_size {
