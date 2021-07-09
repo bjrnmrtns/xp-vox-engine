@@ -3,8 +3,8 @@ use crate::{
     renderer::{Mesh, Renderer},
     transform::Transform,
     world::{
+        loader::{AssetLoader, Command},
         sliding_vec3d::Vec3dSliding,
-        world_loader::{AssetLoader, Command},
     },
 };
 
