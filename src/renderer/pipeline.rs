@@ -1,6 +1,6 @@
 use crate::{
     entity::Entity,
-    mesh::{MeshData, Vertex},
+    mesh::Vertex,
     registry::{Handle, Registry},
     renderer::{
         bindgroup::Instance, depth_texture::DepthTexture, error::RendererError, mesh::Mesh, BindGroup, Camera, Light,

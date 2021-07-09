@@ -1,5 +1,4 @@
-use crate::renderer::{depth_texture::DepthTexture, error::RendererError, mesh::Mesh};
-use std::collections::HashMap;
+use crate::renderer::{depth_texture::DepthTexture, error::RendererError};
 use winit::window::Window;
 
 pub struct Renderer {

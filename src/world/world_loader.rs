@@ -1,4 +1,4 @@
-use crate::{chunker::Chunker, mesh::MeshData, registry::Registry, transform::Transform, vox};
+use crate::{mesh::MeshData, registry::Registry, transform::Transform, vox, world::chunker::Chunker};
 use std::{
     sync::{
         mpsc,

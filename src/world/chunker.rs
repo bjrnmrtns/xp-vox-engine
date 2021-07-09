@@ -3,11 +3,10 @@ use crate::{
     registry::{Handle, Registry},
     transform::Transform,
     vox::Vox,
+    world::greedy_meshing,
 };
 use glam::Vec3;
 use std::collections::HashMap;
-
-pub mod greedy_meshing;
 
 pub struct Chunker {
     entities: Vec<(Handle<Vox>, [usize; 3], [i32; 3])>,

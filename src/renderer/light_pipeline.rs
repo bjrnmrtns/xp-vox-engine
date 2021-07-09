@@ -1,5 +1,5 @@
 use crate::{
-    mesh::{MeshData, Vertex},
+    mesh::Vertex,
     registry::{Handle, Registry},
     renderer::{
         depth_texture::DepthTexture, error::RendererError, light_bindgroup::Instance, Camera, Light, LightBindGroup,

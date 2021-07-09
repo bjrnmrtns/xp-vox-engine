@@ -5,7 +5,6 @@ use winit::{
     window::WindowBuilder,
 };
 use xp_vox_engine::{
-    asset::{AssetLoader, Command},
     cameras::FollowCamera,
     controllers::{CameraController, CharacterController},
     entity::Entity,
@@ -39,12 +38,12 @@ fn main() -> Result<(), GameError> {
             .expect("Could not create pipeline light");
 
     let chunk_size = 32;
-    let mut asset_loader = AssetLoader::new(chunk_size);
     let mut physics = Physics::default();
     let mut meshes = Registry::new();
     let mut lights = Registry::new();
     let mut entities = Registry::new();
     let mut world = World::new(chunk_size);
+    world.load_world();
     let light_mesh_handle = meshes.add(Mesh::from_mesh_data(&renderer, MeshData::from(Cube::new(0.25))));
     lights.add(Light::Directional(DirectionalProperties::new([-1.0, -0.5, -1.0, 1.0])));
 
@@ -58,8 +57,6 @@ fn main() -> Result<(), GameError> {
     )));
     lights.add(Light::Point(PointProperties::new([8.0, 4.0, 8.0, 1.0])));
     lights.add(Light::Point(PointProperties::new([-8.0, 4.0, 8.0, 1.0])));
-
-    asset_loader.request(Command::LoadVox("res/vox-models/#treehouse/#treehouse.vox"));
 
     let cube = entities.add(Entity {
         mesh_handle: meshes.add(Mesh::from_mesh_data(&renderer, MeshData::from(Cube::new(1.0)))),
@@ -117,7 +114,6 @@ fn main() -> Result<(), GameError> {
                 let before_generate = std::time::Instant::now();
                 world.update(
                     [player_position[0], player_position[1], player_position[2]],
-                    &mut asset_loader,
                     &mut renderer,
                     &mut meshes,
                 );
@@ -174,7 +170,7 @@ fn main() -> Result<(), GameError> {
                     futures::executor::block_on(renderer.resize(new_inner_size.width, new_inner_size.height));
                 }
                 WindowEvent::CloseRequested => {
-                    asset_loader.quit_join();
+                    world.quit_join();
                     *control_flow = ControlFlow::Exit
                 }
                 WindowEvent::KeyboardInput { .. } => {

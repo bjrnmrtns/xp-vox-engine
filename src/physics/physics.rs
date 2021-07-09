@@ -1,7 +1,6 @@
 use crate::{
     controllers::CharacterController,
     entity::Entity,
-    mesh::MeshData,
     physics::collisionshape::{Body, BodyStatus},
     registry::{Handle, Registry},
 };
