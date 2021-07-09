@@ -119,6 +119,7 @@ fn main() -> Result<(), GameError> {
                     [player_position[0], player_position[1], player_position[2]],
                     &mut asset_loader,
                     &mut renderer,
+                    &mut meshes,
                 );
 
                 let after_generate = std::time::Instant::now();

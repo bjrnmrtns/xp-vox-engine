@@ -106,7 +106,7 @@ impl World {
         !Self::within_distance_3d(first, second, distance)
     }
 
-    fn delete_obsolete(&mut self) {
+    fn delete_obsolete(&mut self, meshes: &mut Registry<Mesh>) {
         if let (Some(previous_center), Some(center)) = (self.previous_center, self.center) {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
             let previous_center_index = Self::position_to_chunk_index_3d(previous_center, chunk_length);
@@ -125,7 +125,7 @@ impl World {
                                 if chunk.location == [x, y, z] {
                                     self.chunks.set([x, y, z], None);
                                     if let Some(mesh_handle) = self.meshes.get([x, y, z]) {
-                                        self.mesh_storage.remove(mesh_handle);
+                                        meshes.remove(mesh_handle);
                                         self.meshes.set([x, y, z], None);
                                     }
                                 }
@@ -195,7 +195,7 @@ impl World {
         }
     }
 
-    fn retrieve_new(&mut self, asset_loader: &mut AssetLoader, renderer: &mut Renderer) {
+    fn retrieve_new(&mut self, asset_loader: &mut AssetLoader, renderer: &mut Renderer, meshes: &mut Registry<Mesh>) {
         if let Some(center) = self.center {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
             let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
@@ -203,7 +203,7 @@ impl World {
                 if Self::within_distance_3d(center_index, location, self.world_size_in_chunks_radius) {
                     if let Some(chunk) = self.chunks.get(location) {
                         if chunk.location == location && chunk.requested {
-                            let mesh_handle = self.mesh_storage.add(Mesh::from_mesh_data(renderer, mesh_data));
+                            let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
                             self.meshes.set(location, Some(mesh_handle));
                             self.chunks.set(
                                 location,
@@ -220,10 +220,16 @@ impl World {
         }
     }
 
-    pub fn update(&mut self, position: [f32; 3], asset_loader: &mut AssetLoader, renderer: &mut Renderer) {
+    pub fn update(
+        &mut self,
+        position: [f32; 3],
+        asset_loader: &mut AssetLoader,
+        renderer: &mut Renderer,
+        meshes: &mut Registry<Mesh>,
+    ) {
         self.update_center(position);
         self.request_new(asset_loader);
-        self.delete_obsolete();
-        self.retrieve_new(asset_loader, renderer);
+        self.delete_obsolete(meshes);
+        self.retrieve_new(asset_loader, renderer, meshes);
     }
 }

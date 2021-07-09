@@ -105,7 +105,6 @@ impl Pipeline {
             instance_map.push((Handle::<Mesh>::new(*id), start_range..transforms.len() as u32));
             start_range = transforms.len() as u32;
         }
-        fix instances of world so transforms with meshes get rendered
         bindgroup.update_instances(&renderer, transforms.as_slice());
         let mut encoder = renderer
             .device
