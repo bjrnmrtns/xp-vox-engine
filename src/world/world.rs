@@ -30,7 +30,6 @@ impl Chunk {
 pub struct World {
     chunks: Vec3dSliding<Option<Chunk>>,
     meshes: Vec3dSliding<Option<Handle<Mesh>>>,
-    mesh_storage: Registry<Mesh>,
     center: Option<[f32; 3]>,
     previous_center: Option<[f32; 3]>,
     voxel_size: f32,
@@ -44,7 +43,6 @@ impl World {
         Self {
             chunks: Vec3dSliding::new([100, 100, 100]),
             meshes: Vec3dSliding::new([100, 100, 100]),
-            mesh_storage: Registry::new(),
             center: None,
             previous_center: None,
             voxel_size: 0.1,
@@ -231,5 +229,27 @@ impl World {
         self.request_new(asset_loader);
         self.delete_obsolete(meshes);
         self.retrieve_new(asset_loader, renderer, meshes);
+    }
+
+    pub fn get_within_view_mesh_transform(&self, position: [f32; 3]) -> Vec<(Handle<Mesh>, Transform)> {
+        let mut mesh_transforms = Vec::new();
+        let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
+        let position_index = Self::position_to_chunk_index_3d(position, chunk_length);
+        for z in position_index[2] - self.world_size_in_chunks_radius[2] as i32
+            ..position_index[2] + self.world_size_in_chunks_radius[2] as i32 + 1
+        {
+            for y in position_index[1] - self.world_size_in_chunks_radius[1] as i32
+                ..position_index[1] + self.world_size_in_chunks_radius[1] as i32 + 1
+            {
+                for x in position_index[0] - self.world_size_in_chunks_radius[0] as i32
+                    ..position_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
+                {
+                    if let (Some(mesh_handle), Some(chunk)) = (self.meshes.get([x, y, z]), self.chunks.get([x, y, z])) {
+                        mesh_transforms.push((mesh_handle, chunk.transform));
+                    }
+                }
+            }
+        }
+        mesh_transforms
     }
 }

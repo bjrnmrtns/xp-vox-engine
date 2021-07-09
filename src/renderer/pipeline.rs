@@ -80,6 +80,7 @@ impl Pipeline {
         camera: &dyn Camera,
         renderer: &mut Renderer,
         target: &wgpu::TextureView,
+        position: [f32; 3],
     ) {
         bindgroup.update_uniforms(&renderer, &lights, camera);
         let mut instance_map = Vec::new();
@@ -105,6 +106,14 @@ impl Pipeline {
             instance_map.push((Handle::<Mesh>::new(*id), start_range..transforms.len() as u32));
             start_range = transforms.len() as u32;
         }
+        for (handle, transform) in world.get_within_view_mesh_transform(position) {
+            let m = transform.to_matrix();
+            let inv_m = m.inverse();
+            transforms.push(Instance { m, inv_m });
+            instance_map.push((handle, start_range..start_range + 1));
+            start_range = transforms.len() as u32;
+        }
+
         bindgroup.update_instances(&renderer, transforms.as_slice());
         let mut encoder = renderer
             .device

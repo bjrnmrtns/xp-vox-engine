@@ -140,6 +140,7 @@ fn main() -> Result<(), GameError> {
                     &follow_camera,
                     &mut renderer,
                     target,
+                    player_position.into(),
                 );
                 pipeline_light.render(
                     &light_mesh_handle,

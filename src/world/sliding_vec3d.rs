@@ -28,7 +28,7 @@ impl<T: Default + Clone> Vec3dSliding<T> {
         self.data[z * self.size[1] * self.size[0] + y * self.size[0] + x] = value;
     }
 
-    pub fn get(&mut self, pos: [i32; 3]) -> T {
+    pub fn get(&self, pos: [i32; 3]) -> T {
         let x = self.slide_position(pos[0], 0);
         let y = self.slide_position(pos[1], 1);
         let z = self.slide_position(pos[2], 2);
