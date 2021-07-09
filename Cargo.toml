@@ -10,7 +10,7 @@ criterion = "0.3"
 [dependencies]
 noise = "0.7"
 winit = "0.24"
-wgpu = "0.8"
+wgpu = "0.9"
 glsl-to-spirv = "0.1.7"
 bytemuck = "1.5.0"
 glam = "0.12"
