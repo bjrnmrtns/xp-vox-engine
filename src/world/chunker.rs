@@ -6,6 +6,7 @@ use crate::{
     world::greedy_meshing,
 };
 use glam::Vec3;
+use rapier2d::parry::query::details::contact_manifolds_heightfield_shape_shapes;
 use std::collections::HashMap;
 
 pub struct Chunker {
@@ -83,53 +84,26 @@ impl Chunker {
         }
     }
 
-    pub fn generate_chunk(
-        &mut self,
-        registry: &Registry<Vox>,
-        chunk: (i32, i32, i32),
-    ) -> (Option<MeshData>, Transform) {
+    pub fn generate_chunk(&mut self, chunk: [i32; 3]) -> (Option<MeshData>, Transform) {
         let mut vox_to_gen = Vox::new(self.chunk_size, self.chunk_size, self.chunk_size);
         for z in 0..self.chunk_size {
             for y in 0..self.chunk_size {
                 for x in 0..self.chunk_size {
-                    let x_w = chunk.0 as f32 * self.chunk_size as f32 * 0.1 + x as f32 * 0.1;
-                    let y_w = chunk.1 as f32 * self.chunk_size as f32 * 0.1 + y as f32 * 0.1;
-                    let z_w = chunk.2 as f32 * self.chunk_size as f32 * 0.1 + z as f32 * 0.1;
+                    let x_w = chunk[0] as f32 * self.chunk_size as f32 * 0.1 + x as f32 * 0.1;
+                    let y_w = chunk[1] as f32 * self.chunk_size as f32 * 0.1 + y as f32 * 0.1;
+                    let z_w = chunk[2] as f32 * self.chunk_size as f32 * 0.1 + z as f32 * 0.1;
                     if y_w > -5.0 && ((x_w as f32).sin() * (z_w as f32).sin()) > y_w {
                         vox_to_gen.set(x, y, z, 255, [1.0, 0.0, 0.0]);
                     }
                 }
             }
         }
-        if let Some((vox_id, source_offset, target_offset, size)) = &self.chunk_entity_map.get(&chunk) {
-            let (handle, _, _) = &self.entities[*vox_id];
-            let vox = registry.get(handle).unwrap();
-            for z in 0..size[2] {
-                for y in 0..size[1] {
-                    for x in 0..size[0] {
-                        if let Some(color_id) =
-                            vox.get(source_offset[0] + x, source_offset[1] + y, source_offset[2] + z)
-                        {
-                            let color = vox.get_color(color_id);
-                            vox_to_gen.set(
-                                target_offset[0] + x,
-                                target_offset[1] + y,
-                                target_offset[2] + z,
-                                color_id,
-                                color,
-                            );
-                        }
-                    }
-                }
-            }
-        }
-        let mesh = greedy_meshing::greedy_mesh(&vox_to_gen);
         (
-            mesh,
+            greedy_meshing::greedy_mesh(&vox_to_gen),
             Transform::from_translation(Vec3::new(
-                chunk.0 as f32 * self.chunk_size as f32 * 0.1,
-                chunk.1 as f32 * self.chunk_size as f32 * 0.1,
-                chunk.2 as f32 * self.chunk_size as f32 * 0.1,
+                chunk[0] as f32 * self.chunk_size as f32 * 0.1,
+                chunk[1] as f32 * self.chunk_size as f32 * 0.1,
+                chunk[2] as f32 * self.chunk_size as f32 * 0.1,
             )),
         )
     }

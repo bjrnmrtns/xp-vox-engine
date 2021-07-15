@@ -2,10 +2,7 @@ use crate::{
     registry::{Handle, Registry},
     renderer::{Mesh, Renderer},
     transform::Transform,
-    world::{
-        loader::{AssetLoader, Command},
-        sliding_vec3d::Vec3dSliding,
-    },
+    world::{sliding_vec3d::Vec3dSliding, Chunker},
 };
 
 #[derive(Clone)]
@@ -26,7 +23,7 @@ impl Chunk {
 }
 
 pub struct World {
-    asset_loader: AssetLoader,
+    chunker: Chunker,
     chunks: Vec3dSliding<Option<Chunk>>,
     meshes: Vec3dSliding<Option<Handle<Mesh>>>,
     center: Option<[f32; 3]>,
@@ -40,7 +37,7 @@ pub struct World {
 impl World {
     pub fn new(chunk_size: usize) -> Self {
         Self {
-            asset_loader: AssetLoader::new(32),
+            chunker: Chunker::new(32),
             chunks: Vec3dSliding::new([100, 100, 100]),
             meshes: Vec3dSliding::new([100, 100, 100]),
             center: None,
@@ -50,15 +47,6 @@ impl World {
             walking_window: [6.0, 6.0, 6.0],
             world_size_in_chunks_radius: [5, 3, 5],
         }
-    }
-
-    pub fn load_world(&mut self) {
-        self.asset_loader
-            .request(Command::LoadVox("res/vox-models/#treehouse/#treehouse.vox"));
-    }
-
-    pub fn quit_join(&mut self) {
-        self.asset_loader.quit_join();
     }
 
     fn position_to_chunk_index_1d(position: f32, chunk_length: f32) -> i32 {
@@ -144,7 +132,7 @@ impl World {
         }
     }
 
-    fn request_new(&mut self) {
+    fn request_new(&mut self, meshes: &mut Registry<Mesh>, renderer: &mut Renderer) {
         match (self.previous_center, self.center) {
             (None, Some(center)) => {
                 let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
@@ -158,8 +146,19 @@ impl World {
                         for x in center_index[0] - self.world_size_in_chunks_radius[0] as i32
                             ..center_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
                         {
-                            self.asset_loader.request(Command::Load(x, y, z));
-                            self.chunks.set([x, y, z], Some(Chunk::new(x, y, z)));
+                            let (mesh_data, transform) = self.chunker.generate_chunk([x, y, z]);
+                            if let Some(mesh_data) = mesh_data {
+                                let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
+                                self.meshes.set([x, y, z], Some(mesh_handle));
+                                self.chunks.set(
+                                    [x, y, z],
+                                    Some(Chunk {
+                                        location: [x, y, z],
+                                        transform,
+                                        requested: true,
+                                    }),
+                                );
+                            }
                         }
                     }
                 }
@@ -185,8 +184,19 @@ impl World {
                                     self.world_size_in_chunks_radius,
                                 ) {
                                     println!("{:?}", [x, y, z]);
-                                    self.asset_loader.request(Command::Load(x, y, z));
-                                    self.chunks.set([x, y, z], Some(Chunk::new(x, y, z)));
+                                    let (mesh_data, transform) = self.chunker.generate_chunk([x, y, z]);
+                                    if let Some(mesh_data) = mesh_data {
+                                        let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
+                                        self.meshes.set([x, y, z], Some(mesh_handle));
+                                        self.chunks.set(
+                                            [x, y, z],
+                                            Some(Chunk {
+                                                location: [x, y, z],
+                                                transform,
+                                                requested: true,
+                                            }),
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -202,36 +212,10 @@ impl World {
         }
     }
 
-    fn retrieve_new(&mut self, renderer: &mut Renderer, meshes: &mut Registry<Mesh>) {
-        if let Some(center) = self.center {
-            let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
-            let center_index = Self::position_to_chunk_index_3d(center, chunk_length);
-            if let Some((mesh_data, transform, location)) = self.asset_loader.try_retrieve() {
-                if Self::within_distance_3d(center_index, location, self.world_size_in_chunks_radius) {
-                    if let Some(chunk) = self.chunks.get(location) {
-                        if chunk.location == location && chunk.requested {
-                            let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
-                            self.meshes.set(location, Some(mesh_handle));
-                            self.chunks.set(
-                                location,
-                                Some(Chunk {
-                                    location,
-                                    transform,
-                                    requested: true,
-                                }),
-                            );
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     pub fn update(&mut self, position: [f32; 3], renderer: &mut Renderer, meshes: &mut Registry<Mesh>) {
         self.update_center(position);
-        self.request_new();
         self.delete_obsolete(meshes);
-        self.retrieve_new(renderer, meshes);
+        self.request_new(meshes, renderer);
     }
 
     pub fn get_within_view_mesh_transform(&self, position: [f32; 3]) -> Vec<(Handle<Mesh>, Transform)> {

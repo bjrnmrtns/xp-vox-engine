@@ -1,6 +1,5 @@
 mod chunker;
 mod greedy_meshing;
-mod loader;
 mod sliding_vec3d;
 mod world;
 

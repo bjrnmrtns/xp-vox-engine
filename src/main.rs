@@ -43,7 +43,6 @@ fn main() -> Result<(), GameError> {
     let mut lights = Registry::new();
     let mut entities = Registry::new();
     let mut world = World::new(chunk_size);
-    world.load_world();
     let light_mesh_handle = meshes.add(Mesh::from_mesh_data(&renderer, MeshData::from(Cube::new(0.25))));
     lights.add(Light::Directional(DirectionalProperties::new([-1.0, -0.5, -1.0, 1.0])));
 
@@ -169,10 +168,7 @@ fn main() -> Result<(), GameError> {
                     follow_camera.set_aspect_ratio(new_inner_size.width as f32 / new_inner_size.height as f32);
                     futures::executor::block_on(renderer.resize(new_inner_size.width, new_inner_size.height));
                 }
-                WindowEvent::CloseRequested => {
-                    world.quit_join();
-                    *control_flow = ControlFlow::Exit
-                }
+                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 WindowEvent::KeyboardInput { .. } => {
                     winit_impl::handle_input(&mut input_all, &event);
                 }
