@@ -106,7 +106,7 @@ impl Pipeline {
             instance_map.push((Handle::<Mesh>::new(*id), start_range..transforms.len() as u32));
             start_range = transforms.len() as u32;
         }
-        for (handle, transform) in world.get_within_view_mesh_transform(position) {
+        for (handle, transform) in world.get_within_view_mesh_transform([position[0], position[2]]) {
             let m = transform.to_matrix();
             let inv_m = m.inverse();
             transforms.push(Instance { m, inv_m });

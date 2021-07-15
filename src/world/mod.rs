@@ -1,3 +1,4 @@
+mod chunk;
 mod chunker;
 mod greedy_meshing;
 mod sliding_vec3d;
