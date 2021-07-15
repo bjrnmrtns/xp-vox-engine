@@ -9,6 +9,5 @@ pub mod physics;
 pub mod registry;
 pub mod renderer;
 pub mod transform;
-pub mod vox;
 pub mod winit_impl;
 pub mod world;

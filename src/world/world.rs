@@ -76,20 +76,6 @@ impl World {
         }
     }
 
-    fn update_center_3d(&mut self, position: [f32; 2]) {
-        if let Some(previous_center) = self.previous_center {
-            let new_previous_center = self.center;
-            self.center = Some([
-                Self::move_to_posidtion_1d(position[0], previous_center[0], self.walking_window[0]),
-                Self::move_to_posidtion_1d(position[1], previous_center[1], self.walking_window[1]),
-            ]);
-            self.previous_center = new_previous_center;
-        } else {
-            self.previous_center = self.center;
-            self.center = Some(position);
-        }
-    }
-
     fn within_distance_1d(first: i32, second: i32, distance: usize) -> bool {
         (first - second).abs() <= distance as i32
     }
@@ -151,7 +137,7 @@ impl World {
                     for x in center_index[0] - self.world_size_in_chunks_radius[0] as i32
                         ..center_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
                     {
-                        let (mesh_data, transform) = self.chunker.generate_chunk([x, z]);
+                        let (mesh_data, transform) = self.chunker.generate_base_chunk([x, z]);
                         if let Some(mesh_data) = mesh_data {
                             let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
                             self.meshes.set([x, z], Some(mesh_handle));
@@ -185,7 +171,7 @@ impl World {
                                 self.world_size_in_chunks_radius,
                             ) {
                                 println!("{:?}", [x, z]);
-                                let (mesh_data, transform) = self.chunker.generate_chunk([x, z]);
+                                let (mesh_data, transform) = self.chunker.generate_base_chunk([x, z]);
                                 if let Some(mesh_data) = mesh_data {
                                     let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
                                     self.meshes.set([x, z], Some(mesh_handle));
