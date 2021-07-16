@@ -44,8 +44,7 @@ pub struct World {
     chunker: Chunker,
     chunks: Vec2dSliding<Option<Chunk>>,
     mesh_handles: Vec2dSliding<Option<Handle<Mesh>>>,
-    center: Option<[f32; 2]>,
-    previous_center: Option<[f32; 2]>,
+    old_center: Option<[f32; 2]>,
     voxel_size: f32,
     chunk_size_in_voxels: u32,
     walking_window: [f32; 2],
@@ -53,15 +52,14 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(chunk_size: usize) -> Self {
+    pub fn new() -> Self {
         Self {
             chunker: Chunker::new(32),
             chunks: Vec2dSliding::new([100, 100]),
             mesh_handles: Vec2dSliding::new([100, 100]),
-            center: None,
-            previous_center: None,
+            old_center: None,
             voxel_size: 0.1,
-            chunk_size_in_voxels: chunk_size as u32,
+            chunk_size_in_voxels: 32,
             walking_window: [6.0, 6.0],
             radius: 10,
         }
@@ -76,17 +74,6 @@ impl World {
             Self::position_to_chunk_index_1d(position[0], chunk_length),
             Self::position_to_chunk_index_1d(position[1], chunk_length),
         ]
-    }
-
-    fn optional_position_to_chunk_index_2d(position: Option<[f32; 2]>, chunk_length: f32) -> Option<[i32; 2]> {
-        if let Some(position) = position {
-            Some([
-                Self::position_to_chunk_index_1d(position[0], chunk_length),
-                Self::position_to_chunk_index_1d(position[1], chunk_length),
-            ])
-        } else {
-            None
-        }
     }
 
     fn position_to_chunk_index_3d(position: [f32; 3], chunk_length: f32) -> [i32; 3] {
@@ -108,18 +95,11 @@ impl World {
         }
     }
 
-    fn update_center_2d(&mut self, position: [f32; 2]) {
-        if let Some(previous_center) = self.previous_center {
-            let new_previous_center = self.center;
-            self.center = Some([
-                Self::move_to_posidtion_1d(position[0], previous_center[0], self.walking_window[0]),
-                Self::move_to_posidtion_1d(position[1], previous_center[1], self.walking_window[1]),
-            ]);
-            self.previous_center = new_previous_center;
-        } else {
-            self.previous_center = self.center;
-            self.center = Some(position);
-        }
+    fn move_to_posidtion_2d(position: [f32; 2], center: [f32; 2], walking_window: [f32; 2]) -> [f32; 2] {
+        [
+            Self::move_to_posidtion_1d(position[0], center[0], walking_window[0]),
+            Self::move_to_posidtion_1d(position[1], center[1], walking_window[1]),
+        ]
     }
 
     fn within_distance_1d(first: i32, second: i32, distance: usize) -> bool {
@@ -131,81 +111,75 @@ impl World {
             && Self::within_distance_1d(first[1], second[1], distance)
     }
 
-    fn optional_within_distance_2d(first: Option<[i32; 2]>, second: [i32; 2], distance: usize) -> bool {
-        if let Some(first) = first {
-            Self::within_distance_1d(first[0], second[0], distance)
-                && Self::within_distance_1d(first[1], second[1], distance)
-        } else {
-            false
-        }
-    }
-
-    fn within_distance_3d(first: [i32; 3], second: [i32; 3], distance: usize) -> bool {
-        Self::within_distance_1d(first[0], second[0], distance)
-            && Self::within_distance_1d(first[1], second[1], distance)
-            && Self::within_distance_1d(first[2], second[2], distance)
-    }
-
     fn outside_distance_2d(first: [i32; 2], second: [i32; 2], distance: usize) -> bool {
         !Self::within_distance_2d(first, second, distance)
     }
 
-    fn outside_distance_3d(first: [i32; 3], second: [i32; 3], distance: usize) -> bool {
-        !Self::within_distance_3d(first, second, distance)
+    fn generate_chunk(&mut self, chunk_pos: [i32; 2], meshes: &mut Registry<Mesh>, renderer: &mut Renderer) {
+        let (mesh_data, transform) = self.chunker.generate_chunk(chunk_pos);
+        let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
+        self.mesh_handles.set(chunk_pos, Some(mesh_handle));
+        self.chunks.set(
+            chunk_pos,
+            Some(Chunk {
+                location: chunk_pos,
+                transform,
+                requested: true,
+            }),
+        );
     }
 
-    fn delete_obsolete(&mut self, meshes: &mut Registry<Mesh>) {
-        if let (Some(previous_center), Some(center)) = (self.previous_center, self.center) {
-            let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
-            let previous_center_index = Self::position_to_chunk_index_2d(previous_center, chunk_length);
-            for chunk_pos in ChunkArea::new(previous_center_index, self.radius as i32) {
-                let center_index = Self::position_to_chunk_index_2d(center, chunk_length);
-                if Self::outside_distance_2d(center_index, chunk_pos, self.radius) {
-                    if let Some(chunk) = self.chunks.get(chunk_pos) {
-                        if chunk.location == chunk_pos {
-                            self.chunks.set(chunk_pos, None);
-                            if let Some(mesh_handle) = self.mesh_handles.get(chunk_pos) {
-                                meshes.remove(mesh_handle);
-                                self.mesh_handles.set(chunk_pos, None);
-                            }
-                        }
-                    }
+    fn delete_chunk(&mut self, chunk_pos: [i32; 2], meshes: &mut Registry<Mesh>) {
+        if let Some(chunk) = self.chunks.get(chunk_pos) {
+            if chunk.location == chunk_pos {
+                self.chunks.set(chunk_pos, None);
+                if let Some(mesh_handle) = self.mesh_handles.get(chunk_pos) {
+                    meshes.remove(mesh_handle);
+                    self.mesh_handles.set(chunk_pos, None);
                 }
             }
         }
     }
 
-    fn generate_new(&mut self, meshes: &mut Registry<Mesh>, renderer: &mut Renderer) {
+    fn delete_obsolete(&mut self, meshes: &mut Registry<Mesh>, center: [f32; 2]) {
         let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
-        let center_index = Self::optional_position_to_chunk_index_2d(self.center, chunk_length);
-        let previous_center_index = Self::optional_position_to_chunk_index_2d(self.previous_center, chunk_length);
-        if center_index != previous_center_index {
-            println!("prev: {:?}, current: {:?}", previous_center_index, center_index);
-            if let Some(center_index) = center_index {
-                for chunk_pos in ChunkArea::new(center_index, self.radius as i32) {
-                    if !Self::optional_within_distance_2d(previous_center_index, chunk_pos, self.radius) {
-                        println!("{:?}", chunk_pos);
-                        let (mesh_data, transform) = self.chunker.generate_base_chunk(chunk_pos);
-                        let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
-                        self.mesh_handles.set(chunk_pos, Some(mesh_handle));
-                        self.chunks.set(
-                            chunk_pos,
-                            Some(Chunk {
-                                location: chunk_pos,
-                                transform,
-                                requested: true,
-                            }),
-                        );
-                    }
+        if let Some(previous_center) = self.old_center {
+            let previous_center_index = Self::position_to_chunk_index_2d(previous_center, chunk_length);
+            for chunk_pos in ChunkArea::new(previous_center_index, self.radius as i32) {
+                let center_index = Self::position_to_chunk_index_2d(center, chunk_length);
+                if Self::outside_distance_2d(center_index, chunk_pos, self.radius) {
+                    self.delete_chunk(chunk_pos, meshes);
                 }
+            }
+        }
+    }
+
+    fn generate_new(&mut self, meshes: &mut Registry<Mesh>, renderer: &mut Renderer, new_center: [f32; 2]) {
+        let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
+        let center_index = Self::position_to_chunk_index_2d(new_center, chunk_length);
+        for chunk_pos in ChunkArea::new(center_index, self.radius as i32) {
+            if let Some(old_center) = self.old_center {
+                let previous_center_index = Self::position_to_chunk_index_2d(old_center, chunk_length);
+                if !Self::within_distance_2d(previous_center_index, chunk_pos, self.radius) {
+                    println!("{:?}", chunk_pos);
+                    self.generate_chunk(chunk_pos, meshes, renderer);
+                }
+            } else {
+                println!("{:?}", chunk_pos);
+                self.generate_chunk(chunk_pos, meshes, renderer);
             }
         }
     }
 
     pub fn update(&mut self, position: [f32; 3], renderer: &mut Renderer, meshes: &mut Registry<Mesh>) {
-        self.update_center_2d([position[0], position[2]]);
-        self.delete_obsolete(meshes);
-        self.generate_new(meshes, renderer);
+        let center = if let Some(old_center) = self.old_center {
+            Self::move_to_posidtion_2d([position[0], position[2]], old_center, self.walking_window)
+        } else {
+            [position[0], position[2]]
+        };
+        //self.delete_obsolete(meshes, center);
+        self.generate_new(meshes, renderer, center);
+        self.old_center = Some(center);
     }
 
     pub fn get_within_view_mesh_transform(&self, position: [f32; 2]) -> Vec<(Handle<Mesh>, Transform)> {

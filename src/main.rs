@@ -37,12 +37,11 @@ fn main() -> Result<(), GameError> {
         futures::executor::block_on(renderer::LightPipeline::new(&renderer, &light_pipeline_bindgroup))
             .expect("Could not create pipeline light");
 
-    let chunk_size = 32;
     let mut physics = Physics::default();
     let mut meshes = Registry::new();
     let mut lights = Registry::new();
     let mut entities = Registry::new();
-    let mut world = World::new(chunk_size);
+    let mut world = World::new();
     let light_mesh_handle = meshes.add(Mesh::from_mesh_data(&renderer, MeshData::from(Cube::new(0.25))));
     lights.add(Light::Directional(DirectionalProperties::new([-1.0, -0.5, -1.0, 1.0])));
 
