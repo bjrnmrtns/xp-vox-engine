@@ -41,7 +41,7 @@ impl Chunker {
         }
     }
 
-    pub fn generate_base_chunk(&mut self, chunk: [i32; 2]) -> (Option<MeshData>, Transform) {
+    pub fn generate_base_chunk(&mut self, chunk: [i32; 2]) -> (MeshData, Transform) {
         let mut vox_to_gen = VoxHeightMap::new(self.chunk_size, self.chunk_size);
         for z in 0..self.chunk_size {
             for x in 0..self.chunk_size {

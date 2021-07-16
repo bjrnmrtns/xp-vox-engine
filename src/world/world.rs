@@ -5,16 +5,51 @@ use crate::{
     world::{chunk::Chunk, sliding_vec3d::Vec2dSliding, Chunker},
 };
 
+pub struct ChunkArea {
+    center: [i32; 2],
+    next: [i32; 2],
+    radius: i32,
+}
+
+impl ChunkArea {
+    pub fn new(center: [i32; 2], radius: i32) -> Self {
+        let next = [center[0] - radius, center[1] - radius];
+        Self { center, next, radius }
+    }
+}
+
+impl Iterator for ChunkArea {
+    type Item = [i32; 2];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current = self.next;
+        self.next = if current[0] < self.center[0] + self.radius + 1 {
+            let x = current[0] + 1;
+            let y = current[1];
+            [x, y]
+        } else {
+            let x = current[0] - self.radius;
+            let y = current[1] + 1;
+            [x, y]
+        };
+        if current[1] < self.center[1] + self.radius + 1 {
+            Some(current)
+        } else {
+            None
+        }
+    }
+}
+
 pub struct World {
     chunker: Chunker,
     chunks: Vec2dSliding<Option<Chunk>>,
-    meshes: Vec2dSliding<Option<Handle<Mesh>>>,
+    mesh_handles: Vec2dSliding<Option<Handle<Mesh>>>,
     center: Option<[f32; 2]>,
     previous_center: Option<[f32; 2]>,
     voxel_size: f32,
     chunk_size_in_voxels: u32,
     walking_window: [f32; 2],
-    world_size_in_chunks_radius: [usize; 2],
+    radius: usize,
 }
 
 impl World {
@@ -22,13 +57,13 @@ impl World {
         Self {
             chunker: Chunker::new(32),
             chunks: Vec2dSliding::new([100, 100]),
-            meshes: Vec2dSliding::new([100, 100]),
+            mesh_handles: Vec2dSliding::new([100, 100]),
             center: None,
             previous_center: None,
             voxel_size: 0.1,
             chunk_size_in_voxels: chunk_size as u32,
             walking_window: [6.0, 6.0],
-            world_size_in_chunks_radius: [10, 10],
+            radius: 10,
         }
     }
 
@@ -41,6 +76,17 @@ impl World {
             Self::position_to_chunk_index_1d(position[0], chunk_length),
             Self::position_to_chunk_index_1d(position[1], chunk_length),
         ]
+    }
+
+    fn optional_position_to_chunk_index_2d(position: Option<[f32; 2]>, chunk_length: f32) -> Option<[i32; 2]> {
+        if let Some(position) = position {
+            Some([
+                Self::position_to_chunk_index_1d(position[0], chunk_length),
+                Self::position_to_chunk_index_1d(position[1], chunk_length),
+            ])
+        } else {
+            None
+        }
     }
 
     fn position_to_chunk_index_3d(position: [f32; 3], chunk_length: f32) -> [i32; 3] {
@@ -80,22 +126,31 @@ impl World {
         (first - second).abs() <= distance as i32
     }
 
-    fn within_distance_2d(first: [i32; 2], second: [i32; 2], distance: [usize; 2]) -> bool {
-        Self::within_distance_1d(first[0], second[0], distance[0])
-            && Self::within_distance_1d(first[1], second[1], distance[1])
+    fn within_distance_2d(first: [i32; 2], second: [i32; 2], distance: usize) -> bool {
+        Self::within_distance_1d(first[0], second[0], distance)
+            && Self::within_distance_1d(first[1], second[1], distance)
     }
 
-    fn within_distance_3d(first: [i32; 3], second: [i32; 3], distance: [usize; 3]) -> bool {
-        Self::within_distance_1d(first[0], second[0], distance[0])
-            && Self::within_distance_1d(first[1], second[1], distance[1])
-            && Self::within_distance_1d(first[2], second[2], distance[2])
+    fn optional_within_distance_2d(first: Option<[i32; 2]>, second: [i32; 2], distance: usize) -> bool {
+        if let Some(first) = first {
+            Self::within_distance_1d(first[0], second[0], distance)
+                && Self::within_distance_1d(first[1], second[1], distance)
+        } else {
+            false
+        }
     }
 
-    fn outside_distance_2d(first: [i32; 2], second: [i32; 2], distance: [usize; 2]) -> bool {
+    fn within_distance_3d(first: [i32; 3], second: [i32; 3], distance: usize) -> bool {
+        Self::within_distance_1d(first[0], second[0], distance)
+            && Self::within_distance_1d(first[1], second[1], distance)
+            && Self::within_distance_1d(first[2], second[2], distance)
+    }
+
+    fn outside_distance_2d(first: [i32; 2], second: [i32; 2], distance: usize) -> bool {
         !Self::within_distance_2d(first, second, distance)
     }
 
-    fn outside_distance_3d(first: [i32; 3], second: [i32; 3], distance: [usize; 3]) -> bool {
+    fn outside_distance_3d(first: [i32; 3], second: [i32; 3], distance: usize) -> bool {
         !Self::within_distance_3d(first, second, distance)
     }
 
@@ -103,20 +158,18 @@ impl World {
         if let (Some(previous_center), Some(center)) = (self.previous_center, self.center) {
             let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
             let previous_center_index = Self::position_to_chunk_index_2d(previous_center, chunk_length);
-            for z in previous_center_index[1] - self.world_size_in_chunks_radius[1] as i32
-                ..previous_center_index[1] + self.world_size_in_chunks_radius[1] as i32 + 1
-            {
-                for x in previous_center_index[0] - self.world_size_in_chunks_radius[0] as i32
-                    ..previous_center_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
+            for z in previous_center_index[1] - self.radius as i32..previous_center_index[1] + self.radius as i32 + 1 {
+                for x in
+                    previous_center_index[0] - self.radius as i32..previous_center_index[0] + self.radius as i32 + 1
                 {
                     let center_index = Self::position_to_chunk_index_2d(center, chunk_length);
-                    if Self::outside_distance_2d(center_index, [x, z], self.world_size_in_chunks_radius) {
+                    if Self::outside_distance_2d(center_index, [x, z], self.radius) {
                         if let Some(chunk) = self.chunks.get([x, z]) {
                             if chunk.location == [x, z] {
                                 self.chunks.set([x, z], None);
-                                if let Some(mesh_handle) = self.meshes.get([x, z]) {
+                                if let Some(mesh_handle) = self.mesh_handles.get([x, z]) {
                                     meshes.remove(mesh_handle);
-                                    self.meshes.set([x, z], None);
+                                    self.mesh_handles.set([x, z], None);
                                 }
                             }
                         }
@@ -127,20 +180,19 @@ impl World {
     }
 
     fn generate_new(&mut self, meshes: &mut Registry<Mesh>, renderer: &mut Renderer) {
-        match (self.previous_center, self.center) {
-            (None, Some(center)) => {
-                let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
-                let center_index = Self::position_to_chunk_index_2d(center, chunk_length);
-                for z in center_index[1] - self.world_size_in_chunks_radius[1] as i32
-                    ..center_index[1] + self.world_size_in_chunks_radius[1] as i32 + 1
-                {
-                    for x in center_index[0] - self.world_size_in_chunks_radius[0] as i32
-                        ..center_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
-                    {
-                        let (mesh_data, transform) = self.chunker.generate_base_chunk([x, z]);
-                        if let Some(mesh_data) = mesh_data {
+        let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
+        let center_index = Self::optional_position_to_chunk_index_2d(self.center, chunk_length);
+        let previous_center_index = Self::optional_position_to_chunk_index_2d(self.previous_center, chunk_length);
+        if center_index != previous_center_index {
+            println!("prev: {:?}, current: {:?}", previous_center_index, center_index);
+            if let Some(center_index) = center_index {
+                for z in center_index[1] - self.radius as i32..center_index[1] + self.radius as i32 + 1 {
+                    for x in center_index[0] - self.radius as i32..center_index[0] + self.radius as i32 + 1 {
+                        if !Self::optional_within_distance_2d(previous_center_index, [x, z], self.radius) {
+                            println!("{:?}", [x, z]);
+                            let (mesh_data, transform) = self.chunker.generate_base_chunk([x, z]);
                             let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
-                            self.meshes.set([x, z], Some(mesh_handle));
+                            self.mesh_handles.set([x, z], Some(mesh_handle));
                             self.chunks.set(
                                 [x, z],
                                 Some(Chunk {
@@ -152,48 +204,6 @@ impl World {
                         }
                     }
                 }
-            }
-            (Some(previous_center), Some(center)) => {
-                let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
-                let previous_center_index = Self::position_to_chunk_index_2d(previous_center, chunk_length);
-                let center_index = Self::position_to_chunk_index_2d(center, chunk_length);
-                if center_index != previous_center_index {
-                    println!("prev: {:?}, current: {:?}", previous_center_index, center_index);
-                    for z in center_index[1] - self.world_size_in_chunks_radius[1] as i32
-                        ..center_index[1] + self.world_size_in_chunks_radius[1] as i32 + 1
-                    {
-                        for x in center_index[0] - self.world_size_in_chunks_radius[0] as i32
-                            ..center_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
-                        {
-                            if !Self::within_distance_2d(
-                                previous_center_index,
-                                [x, z],
-                                self.world_size_in_chunks_radius,
-                            ) {
-                                println!("{:?}", [x, z]);
-                                let (mesh_data, transform) = self.chunker.generate_base_chunk([x, z]);
-                                if let Some(mesh_data) = mesh_data {
-                                    let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
-                                    self.meshes.set([x, z], Some(mesh_handle));
-                                    self.chunks.set(
-                                        [x, z],
-                                        Some(Chunk {
-                                            location: [x, z],
-                                            transform,
-                                            requested: true,
-                                        }),
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            (None, None) => {
-                assert!(false);
-            }
-            (Some(_), None) => {
-                assert!(false);
             }
         }
     }
@@ -208,13 +218,9 @@ impl World {
         let mut mesh_transforms = Vec::new();
         let chunk_length = self.voxel_size * self.chunk_size_in_voxels as f32;
         let position_index = Self::position_to_chunk_index_2d(position, chunk_length);
-        for z in position_index[1] - self.world_size_in_chunks_radius[1] as i32
-            ..position_index[1] + self.world_size_in_chunks_radius[1] as i32 + 1
-        {
-            for x in position_index[0] - self.world_size_in_chunks_radius[0] as i32
-                ..position_index[0] + self.world_size_in_chunks_radius[0] as i32 + 1
-            {
-                if let (Some(mesh_handle), Some(chunk)) = (self.meshes.get([x, z]), self.chunks.get([x, z])) {
+        for z in position_index[1] - self.radius as i32..position_index[1] + self.radius as i32 + 1 {
+            for x in position_index[0] - self.radius as i32..position_index[0] + self.radius as i32 + 1 {
+                if let (Some(mesh_handle), Some(chunk)) = (self.mesh_handles.get([x, z]), self.chunks.get([x, z])) {
                     mesh_transforms.push((mesh_handle, chunk.transform));
                 }
             }

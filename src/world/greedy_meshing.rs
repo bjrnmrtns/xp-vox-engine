@@ -180,7 +180,7 @@ pub fn greedy_mesh(vox: &Vox3d) -> Option<MeshData> {
     }
 }
 
-pub fn greedy_mesh_base(vox: &VoxHeightMap) -> Option<MeshData> {
+pub fn greedy_mesh_base(vox: &VoxHeightMap) -> MeshData {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
 
@@ -302,5 +302,5 @@ pub fn greedy_mesh_base(vox: &VoxHeightMap) -> Option<MeshData> {
             }
         }
     }
-    Some(MeshData { vertices, indices })
+    MeshData { vertices, indices }
 }
