@@ -1,6 +1,6 @@
 use crate::{
     mesh::{MeshData, Vertex},
-    world::{vox3d::Vox3d, voxheightmap::VoxHeightMap},
+    world::{constants::VOXEL_SIZE_IN_METERS, vox3d::Vox3d, voxheightmap::VoxHeightMap},
 };
 
 struct Descriptor {
@@ -125,14 +125,14 @@ pub fn greedy_mesh(vox: &Vox3d) -> Option<MeshData> {
                             }
                         }
                         let mut base = [0.0, 0.0, 0.0];
-                        base[u] = slice as f32 / 10.0 + d.q[0] as f32 / 10.0;
-                        base[v] = x as f32 / 10.0 + d.q[1] as f32 / 10.0;
-                        base[w] = y as f32 / 10.0 + d.q[2] as f32 / 10.0;
+                        base[u] = slice as f32 * VOXEL_SIZE_IN_METERS + d.q[0] as f32 * VOXEL_SIZE_IN_METERS;
+                        base[v] = x as f32 * VOXEL_SIZE_IN_METERS + d.q[1] as f32 * VOXEL_SIZE_IN_METERS;
+                        base[w] = y as f32 * VOXEL_SIZE_IN_METERS + d.q[2] as f32 * VOXEL_SIZE_IN_METERS;
 
                         let mut dv = [0.0, 0.0, 0.0];
-                        dv[v] = width as f32 / 10.0;
+                        dv[v] = width as f32 * VOXEL_SIZE_IN_METERS;
                         let mut dw = [0.0, 0.0, 0.0];
-                        dw[w] = height as f32 / 10.0;
+                        dw[w] = height as f32 * VOXEL_SIZE_IN_METERS;
 
                         let color = vox.get_color(m);
                         let count = vertices.len() as u32;
@@ -254,14 +254,14 @@ pub fn greedy_mesh_base(vox: &VoxHeightMap) -> MeshData {
                             }
                         }
                         let mut base = [0.0, 0.0, 0.0];
-                        base[u] = slice as f32 / 10.0 + d.q[0] as f32 / 10.0;
-                        base[v] = x as f32 / 10.0 + d.q[1] as f32 / 10.0;
-                        base[w] = y as f32 / 10.0 + d.q[2] as f32 / 10.0;
+                        base[u] = slice as f32 * VOXEL_SIZE_IN_METERS + d.q[0] as f32 * VOXEL_SIZE_IN_METERS;
+                        base[v] = x as f32 * VOXEL_SIZE_IN_METERS + d.q[1] as f32 * VOXEL_SIZE_IN_METERS;
+                        base[w] = y as f32 * VOXEL_SIZE_IN_METERS + d.q[2] as f32 * VOXEL_SIZE_IN_METERS;
 
                         let mut dv = [0.0, 0.0, 0.0];
-                        dv[v] = width as f32 / 10.0;
+                        dv[v] = width as f32 * VOXEL_SIZE_IN_METERS;
                         let mut dw = [0.0, 0.0, 0.0];
-                        dw[w] = height as f32 / 10.0;
+                        dw[w] = height as f32 * VOXEL_SIZE_IN_METERS;
 
                         let color = VoxHeightMap::get_color(m);
                         let count = vertices.len() as u32;

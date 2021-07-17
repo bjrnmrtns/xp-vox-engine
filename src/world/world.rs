@@ -143,8 +143,8 @@ impl World {
     }
 
     fn delete_obsolete(&mut self, meshes: &mut Registry<Mesh>, center: [f32; 2]) {
-        if let Some(previous_center) = self.old_center {
-            let previous_center_index = Self::position_to_chunk_index_2d(previous_center);
+        if let Some(old_center) = self.old_center {
+            let previous_center_index = Self::position_to_chunk_index_2d(old_center);
             for chunk_pos in ChunkArea::new(previous_center_index, self.radius as i32) {
                 let center_index = Self::position_to_chunk_index_2d(center);
                 if Self::outside_distance_2d(center_index, chunk_pos, self.radius) {
@@ -158,9 +158,9 @@ impl World {
         let center_index = Self::position_to_chunk_index_2d(new_center);
         for chunk_pos in ChunkArea::new(center_index, self.radius as i32) {
             if let Some(old_center) = self.old_center {
-                let previous_center_index = Self::position_to_chunk_index_2d(old_center);
-                if previous_center_index != center_index
-                    && !Self::within_distance_2d(previous_center_index, chunk_pos, self.radius)
+                let old_center_index = Self::position_to_chunk_index_2d(old_center);
+                if old_center_index != center_index
+                    && !Self::within_distance_2d(old_center_index, chunk_pos, self.radius)
                 {
                     println!("{:?}", chunk_pos);
                     self.generate_chunk(chunk_pos, meshes, renderer);
