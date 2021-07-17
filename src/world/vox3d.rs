@@ -1,5 +1,9 @@
-use crate::registry::{Handle, Registry};
+use crate::{
+    registry::{Handle, Registry},
+    world::vox::Vox,
+};
 use std::collections::HashMap;
+
 pub struct Vox3d {
     data: Vec<Option<u8>>,
     palette: HashMap<u8, [f32; 3]>,
@@ -26,12 +30,18 @@ impl Vox3d {
         self.data[z * self.y_size * self.x_size + y * self.x_size + x] = Some(color_id);
         self.palette.insert(color_id, color);
     }
+}
 
-    pub fn get(&self, x: usize, y: usize, z: usize) -> Option<u8> {
+impl Vox for Vox3d {
+    fn get_size(&self) -> [usize; 3] {
+        [self.x_size, self.y_size, self.z_size]
+    }
+
+    fn get(&self, x: usize, y: usize, z: usize) -> Option<u8> {
         self.data[z * self.y_size * self.x_size + y * self.x_size + x]
     }
 
-    pub fn get_color(&self, color_id: u8) -> [f32; 3] {
+    fn get_color(&self, color_id: u8) -> [f32; 3] {
         self.palette[&color_id]
     }
 }

@@ -39,7 +39,7 @@ impl Chunker {
             }
         }
         (
-            greedy_meshing::greedy_mesh_base(&vox_to_gen),
+            greedy_meshing::greedy_mesh(&vox_to_gen),
             Transform::from_translation(Vec3::new(
                 chunk[0] as f32 * CHUNK_SIZE_IN_METERS,
                 0.0,

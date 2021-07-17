@@ -1,3 +1,4 @@
+use crate::world::vox::Vox;
 use std::collections::HashMap;
 
 pub struct VoxHeightMap {
@@ -18,8 +19,14 @@ impl VoxHeightMap {
     pub fn set(&mut self, x: usize, z: usize, height: f32) {
         self.data[z * self.x_size + x] = height;
     }
+}
 
-    pub fn get(&self, x: usize, y: usize, z: usize) -> Option<u8> {
+impl Vox for VoxHeightMap {
+    fn get_size(&self) -> [usize; 3] {
+        [self.x_size, 32, self.z_size]
+    }
+
+    fn get(&self, x: usize, y: usize, z: usize) -> Option<u8> {
         let y_height = y as f32 * 0.1 - 1.6;
         if y_height <= self.data[z * self.x_size + x] {
             if y_height > 0.0 {
@@ -31,7 +38,7 @@ impl VoxHeightMap {
         None
     }
 
-    pub fn get_color(color_id: u8) -> [f32; 3] {
+    fn get_color(&self, color_id: u8) -> [f32; 3] {
         if color_id == 1 {
             [0.0, 1.0, 0.0]
         } else {
