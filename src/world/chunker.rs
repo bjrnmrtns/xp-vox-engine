@@ -2,7 +2,7 @@ use crate::{
     mesh::MeshData,
     registry::Handle,
     transform::Transform,
-    world::{greedy_meshing, vox3d::Vox3d, voxHeightMap::VoxHeightMap},
+    world::{greedy_meshing, vox3d::Vox3d, voxheightmap::VoxHeightMap},
 };
 use glam::Vec3;
 use noise::{Fbm, MultiFractal, NoiseFn};

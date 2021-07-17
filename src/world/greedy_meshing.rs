@@ -1,6 +1,6 @@
 use crate::{
     mesh::{MeshData, Vertex},
-    world::{vox3d::Vox3d, voxHeightMap::VoxHeightMap},
+    world::{vox3d::Vox3d, voxheightmap::VoxHeightMap},
 };
 
 struct Descriptor {

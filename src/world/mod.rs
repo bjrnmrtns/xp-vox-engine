@@ -3,7 +3,7 @@ mod chunker;
 mod greedy_meshing;
 mod sliding_vec3d;
 mod vox3d;
-mod voxHeightMap;
+mod voxheightmap;
 mod world;
 
 pub use chunker::Chunker;

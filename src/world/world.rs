@@ -160,7 +160,9 @@ impl World {
         for chunk_pos in ChunkArea::new(center_index, self.radius as i32) {
             if let Some(old_center) = self.old_center {
                 let previous_center_index = Self::position_to_chunk_index_2d(old_center, chunk_length);
-                if !Self::within_distance_2d(previous_center_index, chunk_pos, self.radius) {
+                if previous_center_index != center_index
+                    && !Self::within_distance_2d(previous_center_index, chunk_pos, self.radius)
+                {
                     println!("{:?}", chunk_pos);
                     self.generate_chunk(chunk_pos, meshes, renderer);
                 }
@@ -177,7 +179,7 @@ impl World {
         } else {
             [position[0], position[2]]
         };
-        //self.delete_obsolete(meshes, center);
+        self.delete_obsolete(meshes, center);
         self.generate_new(meshes, renderer, center);
         self.old_center = Some(center);
     }
