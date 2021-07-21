@@ -6,6 +6,7 @@ use crate::{
         constants,
         constants::{CHUNK_SIZE_IN_METERS, CHUNK_SIZE_IN_VOXELS, VOXEL_SIZE_IN_METERS},
         greedy_meshing,
+        vox::Vox,
         vox3d::Vox3d,
         voxheightmap::VoxHeightMap,
     },
@@ -42,7 +43,7 @@ impl Chunker {
             greedy_meshing::greedy_mesh(&vox_to_gen),
             Transform::from_translation(Vec3::new(
                 chunk[0] as f32 * CHUNK_SIZE_IN_METERS,
-                0.0,
+                vox_to_gen.get_y_offset(),
                 chunk[1] as f32 * CHUNK_SIZE_IN_METERS,
             )),
         )

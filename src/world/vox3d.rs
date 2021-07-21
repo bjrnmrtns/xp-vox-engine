@@ -1,5 +1,6 @@
 use crate::{
     registry::{Handle, Registry},
+    transform::Transform,
     world::vox::Vox,
 };
 use std::collections::HashMap;
@@ -43,6 +44,10 @@ impl Vox for Vox3d {
 
     fn get_color(&self, color_id: u8) -> [f32; 3] {
         self.palette[&color_id]
+    }
+
+    fn get_y_offset(&self) -> f32 {
+        0.0
     }
 }
 
