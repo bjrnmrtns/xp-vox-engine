@@ -15,7 +15,8 @@ use rapier3d::{
 };
 use std::collections::HashMap;
 
-struct PhysicsObjectHandle {
+#[derive(Clone)]
+pub struct PhysicsHandle {
     r: RigidBodyHandle,
     c: ColliderHandle,
 }
@@ -29,7 +30,7 @@ pub struct Physics {
     colliders: ColliderSet,
     joints: JointSet,
     ccd_solver: CCDSolver,
-    physics_objects_dynamic: HashMap<u64, PhysicsObjectHandle>,
+    physics_objects_dynamic: HashMap<u64, PhysicsHandle>,
     character: Option<Handle<Entity>>,
 }
 
@@ -93,15 +94,22 @@ impl Physics {
         self.character = Some(entity_handle);
     }
 
-    pub fn register_trimesh(&mut self, mesh_data: &MeshData, translation: [f32; 3]) {
+    pub fn register_trimesh(&mut self, mesh_data: &MeshData, translation: [f32; 3]) -> PhysicsHandle {
         let vertices = mesh_data.vertices.iter().map(|v| v.position.into()).collect();
         let indices = mesh_data.indices.chunks(3).map(|v| [v[0], v[1], v[2]]).collect();
         let rigid_body = RigidBodyBuilder::new_static()
             .translation(translation[0], translation[1], translation[2])
             .build();
-        let handle = self.bodies.insert(rigid_body);
+        let r = self.bodies.insert(rigid_body);
         let collider = ColliderBuilder::trimesh(vertices, indices).build();
-        self.colliders.insert(collider, handle, &mut self.bodies);
+        let c = self.colliders.insert(collider, r, &mut self.bodies);
+        PhysicsHandle { r, c }
+    }
+
+    pub fn remove_physics_handle(&mut self, physics_handle: &PhysicsHandle) {
+        self.colliders.remove(physics_handle.c, &mut self.bodies, false);
+        self.bodies
+            .remove(physics_handle.r, &mut self.colliders, &mut self.joints);
     }
 
     pub fn register(&mut self, entity_handle: Handle<Entity>, entities: &Registry<Entity>) {
@@ -130,7 +138,7 @@ impl Physics {
                     BodyStatus::Static => (),
                     BodyStatus::Dynamic => {
                         self.physics_objects_dynamic
-                            .insert(entity_handle.id, PhysicsObjectHandle { r, c });
+                            .insert(entity_handle.id, PhysicsHandle { r, c });
                     }
                 }
             }

@@ -117,7 +117,7 @@ impl World {
         renderer: &mut Renderer,
     ) {
         let (mesh_data, transform) = self.chunker.generate_chunk(chunk_pos);
-        physics.register_trimesh(
+        let physics_handle = physics.register_trimesh(
             &mesh_data,
             [
                 transform.translation.x,
@@ -131,6 +131,7 @@ impl World {
             chunk_pos,
             Some(Chunk {
                 location: chunk_pos,
+                physics_handle,
                 transform,
                 requested: true,
             }),
@@ -143,6 +144,7 @@ impl World {
                 self.chunks.set(chunk_pos, None);
                 if let Some(mesh_handle) = self.mesh_handles.get(chunk_pos) {
                     meshes.remove(mesh_handle);
+                    physics.remove_physics_handle(&chunk.physics_handle);
                     self.mesh_handles.set(chunk_pos, None);
                 }
             }
