@@ -77,7 +77,7 @@ fn main() -> Result<(), GameError> {
             body_status: BodyStatus::Dynamic,
             body: Body::Sphere(Sphere { radius: 0.5 }),
         }),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 4.0)),
+        transform: Transform::from_translation(Vec3::new(0.0, 10.0, 4.0)),
     });
     physics.register(character.clone(), &entities);
     physics.register_character(character.clone());
@@ -113,6 +113,7 @@ fn main() -> Result<(), GameError> {
                 world.update(
                     [player_position[0], player_position[1], player_position[2]],
                     &mut renderer,
+                    &mut physics,
                     &mut meshes,
                 );
 

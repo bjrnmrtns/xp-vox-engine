@@ -5,6 +5,7 @@ use crate::{
     physics::collisionshape::{Body, BodyStatus},
     registry::{Handle, Registry},
 };
+use futures::StreamExt;
 use glam::Quat;
 use rapier3d::{
     dynamics::{CCDSolver, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
@@ -92,18 +93,12 @@ impl Physics {
         self.character = Some(entity_handle);
     }
 
-    pub fn register_trimesh(&mut self, mesh_data: &MeshData) {
-        let mut vertices = Vec::new();
-        let mut indices = Vec::new();
-        let mut index: u32 = 0;
-        for triangle in mesh_data.vertices.chunks(3) {
-            vertices.push(triangle[0].position.into());
-            vertices.push(triangle[1].position.into());
-            vertices.push(triangle[2].position.into());
-            indices.push([index, index + 1, index + 2]);
-            index += 3;
-        }
-        let rigid_body = RigidBodyBuilder::new_static().build();
+    pub fn register_trimesh(&mut self, mesh_data: &MeshData, translation: [f32; 3]) {
+        let vertices = mesh_data.vertices.iter().map(|v| v.position.into()).collect();
+        let indices = mesh_data.indices.chunks(3).map(|v| [v[0], v[1], v[2]]).collect();
+        let rigid_body = RigidBodyBuilder::new_static()
+            .translation(translation[0], translation[1], translation[2])
+            .build();
         let handle = self.bodies.insert(rigid_body);
         let collider = ColliderBuilder::trimesh(vertices, indices).build();
         self.colliders.insert(collider, handle, &mut self.bodies);

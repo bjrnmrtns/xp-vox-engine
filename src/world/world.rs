@@ -1,4 +1,5 @@
 use crate::{
+    physics::Physics,
     registry::{Handle, Registry},
     renderer::{Mesh, Renderer},
     transform::Transform,
@@ -77,14 +78,6 @@ impl World {
         ]
     }
 
-    fn position_to_chunk_index_3d(position: [f32; 3]) -> [i32; 3] {
-        [
-            Self::position_to_chunk_index_1d(position[0]),
-            Self::position_to_chunk_index_1d(position[1]),
-            Self::position_to_chunk_index_1d(position[2]),
-        ]
-    }
-
     fn move_to_posidtion_1d(position: f32, center: f32, walking_window: f32) -> f32 {
         let offset = position - center;
         if offset < -walking_window / 2.0 {
@@ -116,8 +109,22 @@ impl World {
         !Self::within_distance_2d(first, second, distance)
     }
 
-    fn generate_chunk(&mut self, chunk_pos: [i32; 2], meshes: &mut Registry<Mesh>, renderer: &mut Renderer) {
+    fn generate_chunk(
+        &mut self,
+        chunk_pos: [i32; 2],
+        physics: &mut Physics,
+        meshes: &mut Registry<Mesh>,
+        renderer: &mut Renderer,
+    ) {
         let (mesh_data, transform) = self.chunker.generate_chunk(chunk_pos);
+        physics.register_trimesh(
+            &mesh_data,
+            [
+                transform.translation.x,
+                transform.translation.y,
+                transform.translation.z,
+            ],
+        );
         let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
         self.mesh_handles.set(chunk_pos, Some(mesh_handle));
         self.chunks.set(
@@ -130,7 +137,7 @@ impl World {
         );
     }
 
-    fn delete_chunk(&mut self, chunk_pos: [i32; 2], meshes: &mut Registry<Mesh>) {
+    fn delete_chunk(&mut self, chunk_pos: [i32; 2], physics: &mut Physics, meshes: &mut Registry<Mesh>) {
         if let Some(chunk) = self.chunks.get(chunk_pos) {
             if chunk.location == chunk_pos {
                 self.chunks.set(chunk_pos, None);
@@ -142,19 +149,25 @@ impl World {
         }
     }
 
-    fn delete_obsolete(&mut self, meshes: &mut Registry<Mesh>, center: [f32; 2]) {
+    fn delete_obsolete(&mut self, meshes: &mut Registry<Mesh>, physics: &mut Physics, center: [f32; 2]) {
         if let Some(old_center) = self.old_center {
             let previous_center_index = Self::position_to_chunk_index_2d(old_center);
             for chunk_pos in ChunkArea::new(previous_center_index, self.radius as i32) {
                 let center_index = Self::position_to_chunk_index_2d(center);
                 if Self::outside_distance_2d(center_index, chunk_pos, self.radius) {
-                    self.delete_chunk(chunk_pos, meshes);
+                    self.delete_chunk(chunk_pos, physics, meshes);
                 }
             }
         }
     }
 
-    fn generate_new(&mut self, meshes: &mut Registry<Mesh>, renderer: &mut Renderer, new_center: [f32; 2]) {
+    fn generate_new(
+        &mut self,
+        meshes: &mut Registry<Mesh>,
+        physics: &mut Physics,
+        renderer: &mut Renderer,
+        new_center: [f32; 2],
+    ) {
         let center_index = Self::position_to_chunk_index_2d(new_center);
         for chunk_pos in ChunkArea::new(center_index, self.radius as i32) {
             if let Some(old_center) = self.old_center {
@@ -163,23 +176,29 @@ impl World {
                     && !Self::within_distance_2d(old_center_index, chunk_pos, self.radius)
                 {
                     println!("{:?}", chunk_pos);
-                    self.generate_chunk(chunk_pos, meshes, renderer);
+                    self.generate_chunk(chunk_pos, physics, meshes, renderer);
                 }
             } else {
                 println!("{:?}", chunk_pos);
-                self.generate_chunk(chunk_pos, meshes, renderer);
+                self.generate_chunk(chunk_pos, physics, meshes, renderer);
             }
         }
     }
 
-    pub fn update(&mut self, position: [f32; 3], renderer: &mut Renderer, meshes: &mut Registry<Mesh>) {
+    pub fn update(
+        &mut self,
+        position: [f32; 3],
+        renderer: &mut Renderer,
+        physics: &mut Physics,
+        meshes: &mut Registry<Mesh>,
+    ) {
         let center = if let Some(old_center) = self.old_center {
             Self::move_to_posidtion_2d([position[0], position[2]], old_center, self.walking_window)
         } else {
             [position[0], position[2]]
         };
-        self.delete_obsolete(meshes, center);
-        self.generate_new(meshes, renderer, center);
+        self.delete_obsolete(meshes, physics, center);
+        self.generate_new(meshes, physics, renderer, center);
         self.old_center = Some(center);
     }
 
