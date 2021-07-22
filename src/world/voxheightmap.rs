@@ -1,6 +1,16 @@
 use crate::{transform::Transform, world::vox::Vox};
 use std::collections::HashMap;
 
+const COLOR_EARTH: [u8; 3] = [0x7d, 0x44, 0x27];
+const COLOR_GRASS: [u8; 3] = [0x48, 0x6b, 0x00];
+const COLOR_GREEN: [u8; 3] = [0x2e, 0x46, 0x00];
+const COLOR_LIME: [u8; 3] = [0xa2, 0xc5, 0x23];
+const COLOR_EARTH_ID: u8 = 0;
+const COLOR_GRASS_ID: u8 = 1;
+const COLOR_GREEN_ID: u8 = 2;
+const COLOR_LIME_ID: u8 = 3;
+const COLOR_TABLE: [[u8; 3]; 4] = [COLOR_EARTH, COLOR_GRASS, COLOR_GREEN, COLOR_LIME];
+
 pub struct VoxHeightMap {
     data: Vec<f32>,
     pub x_size: usize,
@@ -44,20 +54,21 @@ impl Vox for VoxHeightMap {
         let y_height = (y as f32 + self.y_min_voxel()) * 0.1;
         if y_height <= self.data[z * self.x_size + x] {
             if y_height > 0.0 {
-                return Some(1);
+                return Some(COLOR_GREEN_ID);
             } else {
-                return Some(0);
+                return Some(COLOR_EARTH_ID);
             }
         }
         None
     }
 
     fn get_color(&self, color_id: u8) -> [f32; 3] {
-        if color_id == 1 {
-            [0.0, 1.0, 0.0]
-        } else {
-            [1.0, 0.0, 0.0]
-        }
+        let color = COLOR_TABLE[color_id as usize];
+        [
+            color[0] as f32 / 255.0,
+            color[1] as f32 / 255.0,
+            color[2] as f32 / 255.0,
+        ]
     }
 
     fn get_y_offset(&self) -> f32 {
