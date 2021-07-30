@@ -11,4 +11,5 @@ mod world;
 pub use chunker::Chunker;
 use constants::*;
 use vox::Vox;
+use vox3d::{load_vox, Vox3d};
 pub use world::World;

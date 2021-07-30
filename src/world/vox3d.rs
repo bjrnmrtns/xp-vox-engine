@@ -55,14 +55,14 @@ impl Vox for Vox3d {
     }
 }
 
-pub fn load_vox(data: &dot_vox::DotVoxData, registry: &mut Registry<Vox3d>) -> Handle<Vox3d> {
+pub fn load_vox(data: &dot_vox::DotVoxData) -> Vox3d {
     let model = &data.models[0];
     let mut vox_model = Vox3d::new(model.size.x as usize, model.size.z as usize, model.size.y as usize);
     for v in &model.voxels {
         let color = palette_to_color(data.palette[v.i as usize]);
         vox_model.set(v.x as usize, v.z as usize, v.y as usize, v.i, color);
     }
-    registry.add(vox_model)
+    vox_model
 }
 
 fn palette_to_color(from: u32) -> [f32; 3] {

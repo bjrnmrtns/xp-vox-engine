@@ -7,10 +7,11 @@ use crate::{
         constants::{CHUNK_SIZE_IN_METERS, CHUNK_SIZE_IN_VOXELS, VOXEL_SIZE_IN_METERS},
         greedy_meshing,
         vox::Vox,
-        vox3d::Vox3d,
+        vox3d::{load_vox, Vox3d},
         voxheightmap::VoxHeightMap,
     },
 };
+use dot_vox::DotVoxData;
 use glam::Vec3;
 use noise::{Fbm, MultiFractal, NoiseFn};
 use std::collections::HashMap;
@@ -39,9 +40,8 @@ impl Chunker {
                 ground_vox.set(x, z, self.noise_function.get([x_w as f64, z_w as f64]) as f32);
             }
         }
-        let mut vegetation = Vox3d::new(1, 1, 1);
-        vegetation.set(0, 0, 0, 1, [1.0, 0.0, 0.0]);
-        let vegetation_mesh_data = greedy_meshing::greedy_mesh(&vegetation);
+        let tree = load_vox(&dot_vox::load("res/vox-models/first-tree.vox").unwrap());
+        let vegetation_mesh_data = greedy_meshing::greedy_mesh(&tree);
         let vegetation_transform = Transform::from_translation(Vec3::new(
             chunk[0] as f32 * CHUNK_SIZE_IN_METERS,
             ground_vox.get_y_max_offset(),
