@@ -4,7 +4,7 @@ use crate::{
     renderer::{Mesh, Renderer},
     transform::Transform,
     world::{
-        chunk::Chunk,
+        chunk::{Chunk, ChunkData},
         constants::{CHUNK_SIZE_IN_METERS, CHUNK_SIZE_IN_VOXELS},
         sliding_vec3d::Vec2dSliding,
         Chunker,
@@ -49,7 +49,6 @@ impl Iterator for ChunkArea {
 pub struct World {
     chunker: Chunker,
     chunks: Vec2dSliding<Option<Chunk>>,
-    mesh_handles: Vec2dSliding<Option<Handle<Mesh>>>,
     old_center: Option<[f32; 2]>,
     walking_window: [f32; 2],
     radius: usize,
@@ -60,7 +59,6 @@ impl World {
         Self {
             chunker: Chunker::new(),
             chunks: Vec2dSliding::new([100, 100]),
-            mesh_handles: Vec2dSliding::new([100, 100]),
             old_center: None,
             walking_window: [6.0, 6.0],
             radius: 10,
@@ -116,23 +114,28 @@ impl World {
         meshes: &mut Registry<Mesh>,
         renderer: &mut Renderer,
     ) {
-        let (mesh_data, transform) = self.chunker.generate_chunk(chunk_pos);
-        let physics_handle = physics.register_trimesh(
-            &mesh_data,
-            [
-                transform.translation.x,
-                transform.translation.y,
-                transform.translation.z,
-            ],
-        );
-        let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
-        self.mesh_handles.set(chunk_pos, Some(mesh_handle));
+        let mut chunk_data = Vec::new();
+        for (mesh_data, transform) in self.chunker.generate_chunk(chunk_pos).drain(..) {
+            let physics_handle = physics.register_trimesh(
+                &mesh_data,
+                [
+                    transform.translation.x,
+                    transform.translation.y,
+                    transform.translation.z,
+                ],
+            );
+            let mesh_handle = meshes.add(Mesh::from_mesh_data(renderer, mesh_data));
+            chunk_data.push(ChunkData {
+                physics_handle,
+                mesh_handle,
+                transform,
+            });
+        }
         self.chunks.set(
             chunk_pos,
             Some(Chunk {
                 location: chunk_pos,
-                physics_handle,
-                transform,
+                chunk_data,
                 requested: true,
             }),
         );
@@ -142,10 +145,9 @@ impl World {
         if let Some(chunk) = self.chunks.get(chunk_pos) {
             if chunk.location == chunk_pos {
                 self.chunks.set(chunk_pos, None);
-                if let Some(mesh_handle) = self.mesh_handles.get(chunk_pos) {
-                    meshes.remove(mesh_handle);
-                    physics.remove_physics_handle(&chunk.physics_handle);
-                    self.mesh_handles.set(chunk_pos, None);
+                for chunk_data in chunk.chunk_data {
+                    meshes.remove(chunk_data.mesh_handle);
+                    physics.remove_physics_handle(&chunk_data.physics_handle);
                 }
             }
         }
@@ -208,8 +210,10 @@ impl World {
         let mut mesh_transforms = Vec::new();
         let position_index = Self::position_to_chunk_index_2d(position);
         for chunk_pos in ChunkArea::new(position_index, self.radius as i32) {
-            if let (Some(mesh_handle), Some(chunk)) = (self.mesh_handles.get(chunk_pos), self.chunks.get(chunk_pos)) {
-                mesh_transforms.push((mesh_handle, chunk.transform));
+            if let Some(chunk) = self.chunks.get(chunk_pos) {
+                for chunk_data in chunk.chunk_data {
+                    mesh_transforms.push((chunk_data.mesh_handle, chunk_data.transform));
+                }
             }
         }
         mesh_transforms

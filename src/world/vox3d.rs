@@ -1,7 +1,7 @@
 use crate::{
     registry::{Handle, Registry},
     transform::Transform,
-    world::vox::Vox,
+    world::{constants::VOXEL_SIZE_IN_METERS, vox::Vox},
 };
 use std::collections::HashMap;
 
@@ -46,8 +46,12 @@ impl Vox for Vox3d {
         self.palette[&color_id]
     }
 
-    fn get_y_offset(&self) -> f32 {
+    fn get_y_min_offset(&self) -> f32 {
         0.0
+    }
+
+    fn get_y_max_offset(&self) -> f32 {
+        self.get_size()[1] as f32 * VOXEL_SIZE_IN_METERS
     }
 }
 

@@ -1,4 +1,7 @@
-use crate::{transform::Transform, world::vox::Vox};
+use crate::{
+    transform::Transform,
+    world::{constants::VOXEL_SIZE_IN_METERS, vox::Vox},
+};
 use std::collections::HashMap;
 
 const COLOR_EARTH: [u8; 3] = [0x7d, 0x44, 0x27];
@@ -31,11 +34,11 @@ impl VoxHeightMap {
     }
 
     pub fn y_min_voxel(&self) -> f32 {
-        (self.y_min / 0.1).floor()
+        (self.y_min / VOXEL_SIZE_IN_METERS).floor()
     }
 
     pub fn y_max_voxel(&self) -> f32 {
-        (self.y_max / 0.1).ceil()
+        (self.y_max / VOXEL_SIZE_IN_METERS).ceil()
     }
 
     pub fn set(&mut self, x: usize, z: usize, height: f32) {
@@ -51,7 +54,7 @@ impl Vox for VoxHeightMap {
     }
 
     fn get(&self, x: usize, y: usize, z: usize) -> Option<u8> {
-        let y_height = (y as f32 + self.y_min_voxel()) * 0.1;
+        let y_height = (y as f32 + self.y_min_voxel()) * VOXEL_SIZE_IN_METERS;
         if y_height <= self.data[z * self.x_size + x] {
             if y_height > 0.0 {
                 return Some(COLOR_GREEN_ID);
@@ -71,7 +74,11 @@ impl Vox for VoxHeightMap {
         ]
     }
 
-    fn get_y_offset(&self) -> f32 {
-        self.y_min_voxel() * 0.1
+    fn get_y_min_offset(&self) -> f32 {
+        self.y_min_voxel() * VOXEL_SIZE_IN_METERS
+    }
+
+    fn get_y_max_offset(&self) -> f32 {
+        self.y_max_voxel() * VOXEL_SIZE_IN_METERS
     }
 }
